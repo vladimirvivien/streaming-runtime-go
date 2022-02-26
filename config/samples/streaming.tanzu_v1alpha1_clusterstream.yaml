@@ -1,0 +1,22 @@
+apiVersion: streaming.tanzu.vmware.com/v1alpha1
+kind: ClusterStream
+metadata:
+  name: kafka-stream
+  namespace: default
+spec:
+    protocol: "kafka"
+    authType: "sasl"
+    properties:
+      brokers: "dapr-kafka.myapp.svc.cluster.local:9092"
+      maxMessageBytes: 200
+---
+apiVersion: streaming.tanzu.vmware.com/v1alpha1
+kind: ClusterStream
+metadata:
+  name: redis-stream
+  namespace: default
+spec:
+  protocol: "redis"
+  properties:
+    brokers: myredis.myapp.svc.cluster.local:9092
+    maxMessageBytes: 200

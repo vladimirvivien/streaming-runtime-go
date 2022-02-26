@@ -1,0 +1,46 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - dapr.io
+  resources:
+  - components
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.tanzu.vmware.com
+  resources:
+  - clusterstreams
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.tanzu.vmware.com
+  resources:
+  - clusterstreams/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - streaming.tanzu.vmware.com
+  resources:
+  - clusterstreams/status
+  verbs:
+  - get
+  - patch
+  - update

@@ -1,0 +1,15 @@
+domain: vmware.com
+layout:
+- go.kubebuilder.io/v3
+projectName: streaming-runtime
+repo: github.com/vmware-tanzu/streaming-runtime
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: vmware.com
+  group: streaming.tanzu
+  kind: ClusterStream
+  path: github.com/vmware-tanzu/streaming-runtime/api/v1alpha1
+  version: v1alpha1
