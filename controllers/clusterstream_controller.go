@@ -29,11 +29,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	streamingruntime "github.com/vmware-tanzu/streaming-runtime/api/v1alpha1"
+	streamingruntime "github.com/vladimirvivien/streaming-runtime/api/v1alpha1"
 )
 
 //var (
-//	finalizer = "clusterstream.streaming.tanzu.com/finalizer"
+//	finalizer = "clusterstream.streaming.vivien.io/finalizer"
 //)
 
 // ClusterStreamReconciler reconciles a ClusterStream object
@@ -42,9 +42,9 @@ type ClusterStreamReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=streaming.tanzu.vmware.com,resources=clusterstreams,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=streaming.tanzu.vmware.com,resources=clusterstreams/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=streaming.tanzu.vmware.com,resources=clusterstreams/finalizers,verbs=update
+//+kubebuilder:rbac:groups=streaming.vivien.io,resources=clusterstreams,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=streaming.vivien.io,resources=clusterstreams/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=streaming.vivien.io,resources=clusterstreams/finalizers,verbs=update
 //+kubebuilder:rbac:groups=dapr.io,resources=components,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to

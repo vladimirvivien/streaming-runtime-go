@@ -19,7 +19,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - streaming.tanzu.vmware.com
+  - streaming.vivien.io
   resources:
   - clusterstreams
   verbs:
@@ -31,13 +31,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - streaming.tanzu.vmware.com
+  - streaming.vivien.io
   resources:
   - clusterstreams/finalizers
   verbs:
   - update
 - apiGroups:
-  - streaming.tanzu.vmware.com
+  - streaming.vivien.io
   resources:
   - clusterstreams/status
   verbs:

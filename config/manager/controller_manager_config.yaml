@@ -8,4 +8,4 @@ webhook:
   port: 9443
 leaderElection:
   leaderElect: true
-  resourceName: 873658fb.vmware.com
+  resourceName: 873658fb.vivien.io

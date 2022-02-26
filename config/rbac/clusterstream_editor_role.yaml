@@ -5,7 +5,7 @@ metadata:
   name: clusterstream-editor-role
 rules:
 - apiGroups:
-  - streaming.tanzu.vmware.com
+  - streaming.vivien.io
   resources:
   - clusterstreams
   verbs:
@@ -17,7 +17,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - streaming.tanzu.vmware.com
+  - streaming.vivien.io
   resources:
   - clusterstreams/status
   verbs:

@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   labels:
     control-plane: controller-manager
-  name: streamruntime-system
+  name: streaming-system
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -11,9 +11,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
-  name: clusterstreams.streaming.tanzu.vmware.com
+  name: clusterstreams.streaming.vivien.io
 spec:
-  group: streaming.tanzu.vmware.com
+  group: streaming.vivien.io
   names:
     kind: ClusterStream
     listKind: ClusterStreamList
@@ -78,14 +78,14 @@ status:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: streamruntime-controller-manager
-  namespace: streamruntime-system
+  name: streaming-controller-manager
+  namespace: streaming-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: streamruntime-leader-election-role
-  namespace: streamruntime-system
+  name: streaming-leader-election-role
+  namespace: streaming-system
 rules:
 - apiGroups:
   - ""
@@ -123,7 +123,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: streamruntime-manager-role
+  name: streaming-manager-role
 rules:
 - apiGroups:
   - dapr.io
@@ -138,7 +138,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - streaming.tanzu.vmware.com
+  - streaming.vivien.io
   resources:
   - clusterstreams
   verbs:
@@ -150,13 +150,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - streaming.tanzu.vmware.com
+  - streaming.vivien.io
   resources:
   - clusterstreams/finalizers
   verbs:
   - update
 - apiGroups:
-  - streaming.tanzu.vmware.com
+  - streaming.vivien.io
   resources:
   - clusterstreams/status
   verbs:
@@ -167,7 +167,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: streamruntime-metrics-reader
+  name: streaming-metrics-reader
 rules:
 - nonResourceURLs:
   - /metrics
@@ -177,7 +177,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: streamruntime-proxy-role
+  name: streaming-proxy-role
 rules:
 - apiGroups:
   - authentication.k8s.io
@@ -195,42 +195,42 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: streamruntime-leader-election-rolebinding
-  namespace: streamruntime-system
+  name: streaming-leader-election-rolebinding
+  namespace: streaming-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: streamruntime-leader-election-role
+  name: streaming-leader-election-role
 subjects:
 - kind: ServiceAccount
-  name: streamruntime-controller-manager
-  namespace: streamruntime-system
+  name: streaming-controller-manager
+  namespace: streaming-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: streamruntime-manager-rolebinding
+  name: streaming-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: streamruntime-manager-role
+  name: streaming-manager-role
 subjects:
 - kind: ServiceAccount
-  name: streamruntime-controller-manager
-  namespace: streamruntime-system
+  name: streaming-controller-manager
+  namespace: streaming-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: streamruntime-proxy-rolebinding
+  name: streaming-proxy-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: streamruntime-proxy-role
+  name: streaming-proxy-role
 subjects:
 - kind: ServiceAccount
-  name: streamruntime-controller-manager
-  namespace: streamruntime-system
+  name: streaming-controller-manager
+  namespace: streaming-system
 ---
 apiVersion: v1
 data:
@@ -245,19 +245,19 @@ data:
       port: 9443
     leaderElection:
       leaderElect: true
-      resourceName: 873658fb.vmware.com
+      resourceName: 873658fb.vivien.io
 kind: ConfigMap
 metadata:
-  name: streamruntime-manager-config
-  namespace: streamruntime-system
+  name: streaming-manager-config
+  namespace: streaming-system
 ---
 apiVersion: v1
 kind: Service
 metadata:
   labels:
     control-plane: controller-manager
-  name: streamruntime-controller-manager-metrics-service
-  namespace: streamruntime-system
+  name: streaming-controller-manager-metrics-service
+  namespace: streaming-system
 spec:
   ports:
   - name: https
@@ -272,8 +272,8 @@ kind: Deployment
 metadata:
   labels:
     control-plane: controller-manager
-  name: streamruntime-controller-manager
-  namespace: streamruntime-system
+  name: streaming-controller-manager
+  namespace: streaming-system
 spec:
   replicas: 1
   selector:
@@ -329,5 +329,5 @@ spec:
           allowPrivilegeEscalation: false
       securityContext:
         runAsNonRoot: true
-      serviceAccountName: streamruntime-controller-manager
+      serviceAccountName: streaming-controller-manager
       terminationGracePeriodSeconds: 10

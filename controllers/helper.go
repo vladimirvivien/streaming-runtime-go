@@ -6,21 +6,16 @@ import (
 	"log"
 
 	daprcomponents "github.com/dapr/dapr/pkg/apis/components/v1alpha1"
-	streamingruntime "github.com/vmware-tanzu/streaming-runtime/api/v1alpha1"
+	streamingruntime "github.com/vladimirvivien/streaming-runtime/api/v1alpha1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-func getMetadataStringValues(keyName string, properties map[string]interface{}) (result []string) {
+func getMetadataStringValues(keyName string, properties map[string]string) (result []string) {
 	for key, value := range properties {
 		if key == keyName {
-			data, ok := value.(string)
-			if !ok {
-				result = append(result, "<unknown>")
-				continue
-			}
-			result = append(result, data)
+			result = append(result, value)
 		}
 	}
 	return

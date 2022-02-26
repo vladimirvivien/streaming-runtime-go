@@ -1,15 +1,15 @@
-domain: vmware.com
+domain: vivien.io
 layout:
 - go.kubebuilder.io/v3
 projectName: streaming-runtime
-repo: github.com/vmware-tanzu/streaming-runtime
+repo: github.com/vladimirvivien/streaming-runtime
 resources:
 - api:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: vmware.com
-  group: streaming.tanzu
+  domain: vivien.io
+  group: streaming
   kind: ClusterStream
-  path: github.com/vmware-tanzu/streaming-runtime/api/v1alpha1
+  path: github.com/vladimirvivien/streaming-runtime/api/v1alpha1
   version: v1alpha1

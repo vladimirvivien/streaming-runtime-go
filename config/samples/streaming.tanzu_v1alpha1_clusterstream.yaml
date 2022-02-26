@@ -1,4 +1,4 @@
-apiVersion: streaming.tanzu.vmware.com/v1alpha1
+apiVersion: streaming.vivien.io/v1alpha1
 kind: ClusterStream
 metadata:
   name: kafka-stream
@@ -8,9 +8,9 @@ spec:
     authType: "sasl"
     properties:
       brokers: "dapr-kafka.myapp.svc.cluster.local:9092"
-      maxMessageBytes: 200
+      maxMessageBytes: "200"
 ---
-apiVersion: streaming.tanzu.vmware.com/v1alpha1
+apiVersion: streaming.vivien.io/v1alpha1
 kind: ClusterStream
 metadata:
   name: redis-stream
@@ -19,4 +19,3 @@ spec:
   protocol: "redis"
   properties:
     brokers: myredis.myapp.svc.cluster.local:9092
-    maxMessageBytes: 200

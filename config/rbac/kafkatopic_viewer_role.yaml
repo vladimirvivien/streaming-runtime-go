@@ -5,7 +5,7 @@ metadata:
   name: kafkatopic-viewer-role
 rules:
 - apiGroups:
-  - streaming.tanzu.vmware.com
+  - streaming.vivien.io
   resources:
   - kafkatopics
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - streaming.tanzu.vmware.com
+  - streaming.vivien.io
   resources:
   - kafkatopics/status
   verbs:

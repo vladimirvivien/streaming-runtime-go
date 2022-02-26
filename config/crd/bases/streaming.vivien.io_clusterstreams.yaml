@@ -6,20 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
-  name: kafkatopics.streaming.tanzu.vmware.com
+  name: clusterstreams.streaming.vivien.io
 spec:
-  group: streaming.tanzu.vmware.com
+  group: streaming.vivien.io
   names:
-    kind: KafkaTopic
-    listKind: KafkaTopicList
-    plural: kafkatopics
-    singular: kafkatopic
+    kind: ClusterStream
+    listKind: ClusterStreamList
+    plural: clusterstreams
+    singular: clusterstream
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: KafkaTopic is the Schema for the kafkatopics API
+        description: ClusterStream is the Schema for the clusterstreams API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,15 +34,33 @@ spec:
           metadata:
             type: object
           spec:
-            description: KafkaTopicSpec defines the desired state of KafkaTopic
+            description: ClusterStreamSpec defines the desired state of ClusterStream
             properties:
-              foo:
-                description: Foo is an example field of KafkaTopic. Edit kafkatopic_types.go
-                  to remove/update
+              authType:
                 type: string
+              properties:
+                additionalProperties:
+                  type: string
+                type: object
+              protocol:
+                type: string
+            required:
+            - properties
+            - protocol
             type: object
           status:
-            description: KafkaTopicStatus defines the observed state of KafkaTopic
+            description: ClusterStreamStatus defines the observed state of ClusterStream
+            properties:
+              provider:
+                type: string
+              servers:
+                type: string
+              status:
+                type: string
+            required:
+            - provider
+            - servers
+            - status
             type: object
         type: object
     served: true
