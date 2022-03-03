@@ -1,0 +1,6 @@
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Processor
+metadata:
+  name: processor-sample
+spec:
+  # TODO(user): Add fields here

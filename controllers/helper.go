@@ -8,6 +8,8 @@ import (
 	daprcomponents "github.com/dapr/dapr/pkg/apis/components/v1alpha1"
 	daprsubscriptions "github.com/dapr/dapr/pkg/apis/subscriptions/v2alpha1"
 	streamingruntime "github.com/vladimirvivien/streaming-runtime/api/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -94,4 +96,51 @@ func (r *StreamReconciler) updateDaprSubscription(stream *streamingruntime.Strea
 	sub.Spec.Pubsubname = stream.Spec.ClusterStream
 	sub.Spec.Routes.Default = stream.Spec.Route
 	sub.Scopes = stream.Spec.Recipients
+}
+
+func (r *ProcessorReconciler) createDeployment(proc *streamingruntime.Processor) (*appsv1.Deployment, error) {
+	replicas := proc.Spec.Replicas
+	if replicas == 0 {
+		replicas = 1
+	}
+
+	// add port info
+	proc.Spec.Container.Ports = append(proc.Spec.Container.Ports, corev1.ContainerPort{
+		Name:          "streamrt-app-port",
+		HostPort:      0,
+		ContainerPort: proc.Spec.ServicePort,
+	})
+
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      proc.Name,
+			Namespace: proc.Namespace,
+			Labels:    map[string]string{"app": proc.Name},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": proc.Name},
+			},
+			Replicas: &replicas,
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": proc.Name},
+					Annotations: map[string]string{
+						"dapr.io/enabled":  "true",
+						"dapr.io/app-id":   proc.Name,
+						"dapr.io/app-port": fmt.Sprintf("%d", proc.Spec.ServicePort),
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{proc.Spec.Container},
+				},
+			},
+		},
+	}
+
+	return deployment, nil
+}
+
+func (r *ProcessorReconciler) updateDeployment(proc *streamingruntime.Processor, dep *appsv1.Deployment) {
+	dep.Spec.Template.Spec.Containers = []corev1.Container{proc.Spec.Container}
 }

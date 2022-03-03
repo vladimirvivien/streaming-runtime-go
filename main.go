@@ -48,6 +48,7 @@ func init() {
 	utilruntime.Must(daprcomponents.AddToScheme(scheme))
 	utilruntime.Must(daprsubscriptions.AddToScheme(scheme))
 	utilruntime.Must(streamingv1alpha1.AddToScheme(scheme))
+
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -97,6 +98,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&controllers.ProcessorReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Processor")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

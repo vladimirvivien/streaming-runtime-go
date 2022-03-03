@@ -57,23 +57,28 @@ func (r *StreamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	// is item being deleted?
+	if !stream.ObjectMeta.DeletionTimestamp.IsZero() {
+		return ctrl.Result{}, nil // do nothing, stop reconciliation
+	}
+
 	// Look for dapr subscription object
 	// if not found, create new one
 	sub := new(daprsubscriptions.Subscription)
 	err = r.Get(ctx, types.NamespacedName{Name: stream.Name, Namespace: stream.Namespace}, sub)
 	if err != nil && errors.IsNotFound(err) {
-		// New Subscription component
-		sub, err = r.createDaprSubscription(stream)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-
 		log.V(1).Info("Creating subscription for Stream",
 			"ClusterStream", stream.Spec.ClusterStream,
 			"Namespace", stream.Namespace,
 			"Name", stream.Name,
 			"Topic", stream.Spec.Topic,
 		)
+
+		// New Subscription component
+		sub, err = r.createDaprSubscription(stream)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 
 		if err := r.Create(ctx, sub); err != nil {
 			log.Error(err, "Failed to create subscription for Stream",

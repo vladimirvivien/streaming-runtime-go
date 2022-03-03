@@ -7,6 +7,18 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - dapr.io
   resources:
   - components
@@ -52,6 +64,32 @@ rules:
   - streaming.vivien.io
   resources:
   - clusterstreams/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - processors
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - processors/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - processors/status
   verbs:
   - get
   - patch

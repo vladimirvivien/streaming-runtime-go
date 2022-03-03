@@ -1,0 +1,24 @@
+# permissions for end users to edit processors.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: processor-editor-role
+rules:
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - processors
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - processors/status
+  verbs:
+  - get

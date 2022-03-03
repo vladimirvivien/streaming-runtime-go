@@ -4,6 +4,7 @@
 resources:
 - bases/streaming.vivien.io_clusterstreams.yaml
 - bases/streaming.vivien.io_streams.yaml
+- bases/streaming.vivien.io_processors.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
@@ -13,6 +14,7 @@ patchesStrategicMerge:
 #- patches/webhook_in_clusterstreams.yaml
 #- patches/webhook_in_kafkatopics.yaml
 #- patches/webhook_in_streams.yaml
+#- patches/webhook_in_processors.yaml
 #+kubebuilder:scaffold:crdkustomizewebhookpatch
 
 # [CERTMANAGER] To enable cert-manager, uncomment all the sections with [CERTMANAGER] prefix.
@@ -21,6 +23,7 @@ patchesStrategicMerge:
 #- patches/cainjection_in_clusterstreams.yaml
 #- patches/cainjection_in_kafkatopics.yaml
 #- patches/cainjection_in_streams.yaml
+#- patches/cainjection_in_processors.yaml
 #+kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 # the following config is for teaching kustomize how to do kustomization for CRDs.
