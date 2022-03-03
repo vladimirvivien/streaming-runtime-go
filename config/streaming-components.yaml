@@ -75,6 +75,72 @@ status:
   conditions: []
   storedVersions: []
 ---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.7.0
+  creationTimestamp: null
+  name: streams.streaming.vivien.io
+spec:
+  group: streaming.vivien.io
+  names:
+    kind: Stream
+    listKind: StreamList
+    plural: streams
+    singular: stream
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Stream is the Schema for the streams API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: StreamSpec defines the desired state of Stream
+            properties:
+              clusterStream:
+                type: string
+              properties:
+                additionalProperties:
+                  type: string
+                type: object
+              recipients:
+                items:
+                  type: string
+                type: array
+              route:
+                type: string
+              topic:
+                type: string
+            required:
+            - clusterStream
+            - recipients
+            - topic
+            type: object
+          status:
+            description: StreamStatus defines the observed state of Stream
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -138,6 +204,18 @@ rules:
   - update
   - watch
 - apiGroups:
+  - dapr.io
+  resources:
+  - subscriptions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - streaming.vivien.io
   resources:
   - clusterstreams
@@ -159,6 +237,32 @@ rules:
   - streaming.vivien.io
   resources:
   - clusterstreams/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - streams
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - streams/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - streams/status
   verbs:
   - get
   - patch

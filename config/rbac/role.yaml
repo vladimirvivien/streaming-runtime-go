@@ -19,6 +19,18 @@ rules:
   - update
   - watch
 - apiGroups:
+  - dapr.io
+  resources:
+  - subscriptions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - streaming.vivien.io
   resources:
   - clusterstreams
@@ -40,6 +52,32 @@ rules:
   - streaming.vivien.io
   resources:
   - clusterstreams/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - streams
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - streams/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - streams/status
   verbs:
   - get
   - patch

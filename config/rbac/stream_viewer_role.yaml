@@ -1,0 +1,20 @@
+# permissions for end users to view streams.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: stream-viewer-role
+rules:
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - streams
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - streams/status
+  verbs:
+  - get

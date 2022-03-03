@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/dapr/dapr v1.6.0
+	github.com/dapr/go-sdk v1.3.1
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.15.0
 	k8s.io/apiextensions-apiserver v0.22.1

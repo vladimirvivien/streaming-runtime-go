@@ -98,7 +98,7 @@ func (r *ClusterStreamReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	err = r.Get(ctx, types.NamespacedName{Name: cs.Name, Namespace: cs.Namespace}, component)
 	if err != nil && errors.IsNotFound(err) {
 		// New component
-		componentType := fmt.Sprintf("%s.pubsub", cs.Spec.Protocol)
+		componentType := fmt.Sprintf("pubsub.%s", cs.Spec.Protocol)
 		component, err = r.createDaprComponent(componentType, cs)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -117,7 +117,7 @@ func (r *ClusterStreamReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, err
 		}
 
-		log.Info("Component created successfully", "Component.Name", component.Name, "Component.Namespace", component.Namespace)
+		log.Info("Pubsub component created successfully", "Component.Name", component.Name, "Component.Namespace", component.Namespace)
 		return ctrl.Result{Requeue: true}, nil
 
 	} else if err != nil {
@@ -127,10 +127,23 @@ func (r *ClusterStreamReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// if associated dapr component is found, update it
 	if err := r.Update(ctx, component); err != nil {
-		log.Error(err, "Failed to create pub/sub dapr component",
+		log.Error(err, "Failed to update pub/sub component",
 			"Namespace", component.Namespace,
 			"Name", component.Name,
 			"Type", component.Spec.Type)
+		return ctrl.Result{}, err
+	}
+
+	// retrieve latest ClusterStream
+	err = r.Get(ctx, req.NamespacedName, cs)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted.
+			log.Info("ClusterStream not found, skipping status update", "Name", req.Name, "Namespace", req.Namespace)
+			return ctrl.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		log.Error(err, "Failed to fetch latest ClusterStream", "Name", req.Name, "Namespace", req.Namespace)
 		return ctrl.Result{}, err
 	}
 
@@ -147,7 +160,7 @@ func (r *ClusterStreamReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	if statErr := r.Status().Update(ctx, cs); statErr != nil {
-		log.Error(statErr, "Failed to update status")
+		log.Error(statErr, "Failed to update ClusterStream status")
 		return ctrl.Result{}, statErr
 	}
 

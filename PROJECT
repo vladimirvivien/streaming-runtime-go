@@ -13,3 +13,13 @@ resources:
   kind: ClusterStream
   path: github.com/vladimirvivien/streaming-runtime/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: vivien.io
+  group: streaming
+  kind: Stream
+  path: github.com/vladimirvivien/streaming-runtime/api/v1alpha1
+  version: v1alpha1
+version: "3"

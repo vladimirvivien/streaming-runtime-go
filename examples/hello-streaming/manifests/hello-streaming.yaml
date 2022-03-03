@@ -1,0 +1,78 @@
+apiVersion: streaming.vivien.io/v1alpha1
+kind: ClusterStream
+metadata:
+  name: redis-stream
+  namespace: default
+spec:
+  protocol: redis
+  properties:
+    redisHost: redis:6379
+    redisPassword: ""
+---
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Stream
+metadata:
+  name: hello-topic-stream
+  namespace: default
+spec:
+  clusterStream: "redis-stream"
+  topic: "hello-topic-stream"
+  route: "/messages"
+  recipients:
+    - message-proc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-gen
+  labels:
+    app: message-gen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-gen
+  template:
+    metadata:
+      labels:
+        app: message-gen
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "message-gen"
+    spec:
+      containers:
+        - name: message-gen
+          image: ghcr.io/vladimirvivien/streaming-runtime-examples/hello-streaming/message-gen:latest
+          imagePullPolicy: Always
+          env:
+          - name: CLUSTER_STREAM
+            value: "redis-stream"
+          - name: STREAM_TOPIC
+            value: "hello-topic-stream"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-proc
+  labels:
+    app: message-proc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-proc
+  template:
+    metadata:
+      labels:
+        app: message-proc
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "message-proc"
+        dapr.io/app-port: "8080"
+    spec:
+      containers:
+        - name: message-proc
+          image: ghcr.io/vladimirvivien/streaming-runtime-examples/hello-streaming/message-proc:latest
+          ports:
+            - containerPort: 8080
+          imagePullPolicy: Always

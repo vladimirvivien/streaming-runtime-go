@@ -21,6 +21,7 @@ import (
 	"os"
 
 	daprcomponents "github.com/dapr/dapr/pkg/apis/components/v1alpha1"
+	daprsubscriptions "github.com/dapr/dapr/pkg/apis/subscriptions/v2alpha1"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -32,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	streamingruntime "github.com/vladimirvivien/streaming-runtime/api/v1alpha1"
+	streamingv1alpha1 "github.com/vladimirvivien/streaming-runtime/api/v1alpha1"
 	"github.com/vladimirvivien/streaming-runtime/controllers"
 	//+kubebuilder:scaffold:imports
 )
@@ -45,7 +46,8 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(daprcomponents.AddToScheme(scheme))
-	utilruntime.Must(streamingruntime.AddToScheme(scheme))
+	utilruntime.Must(daprsubscriptions.AddToScheme(scheme))
+	utilruntime.Must(streamingv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -84,6 +86,14 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterStream")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.StreamReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Stream")
 		os.Exit(1)
 	}
 
