@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	daprcomponents "github.com/dapr/dapr/pkg/apis/components/v1alpha1"
 	daprsubscriptions "github.com/dapr/dapr/pkg/apis/subscriptions/v2alpha1"
@@ -55,6 +56,7 @@ func (r *ClusterStreamReconciler) createDaprComponent(componentType string, clus
 
 	log.Printf("Created component: %#v", component)
 
+	// establish object ownership
 	if err := ctrl.SetControllerReference(clusterStream, component, r.Scheme); err != nil {
 		return nil, err
 	}
@@ -84,6 +86,7 @@ func (r *StreamReconciler) createDaprSubscription(stream *streamingruntime.Strea
 		Scopes: stream.Spec.Recipients,
 	}
 
+	// establish object ownership
 	if err := ctrl.SetControllerReference(stream, sub, r.Scheme); err != nil {
 		return nil, err
 	}
@@ -98,7 +101,7 @@ func (r *StreamReconciler) updateDaprSubscription(stream *streamingruntime.Strea
 	sub.Scopes = stream.Spec.Recipients
 }
 
-func (r *ProcessorReconciler) createDeployment(proc *streamingruntime.Processor) (*appsv1.Deployment, error) {
+func (r *ProcessorReconciler) createProcessorDeployment(proc *streamingruntime.Processor) (*appsv1.Deployment, error) {
 	replicas := proc.Spec.Replicas
 	if replicas == 0 {
 		replicas = 1
@@ -106,7 +109,7 @@ func (r *ProcessorReconciler) createDeployment(proc *streamingruntime.Processor)
 
 	// add port info
 	proc.Spec.Container.Ports = append(proc.Spec.Container.Ports, corev1.ContainerPort{
-		Name:          "streamrt-app-port",
+		Name:          "app-port",
 		HostPort:      0,
 		ContainerPort: proc.Spec.ServicePort,
 	})
@@ -138,9 +141,101 @@ func (r *ProcessorReconciler) createDeployment(proc *streamingruntime.Processor)
 		},
 	}
 
+	// establish ownership
+	if err := ctrl.SetControllerReference(proc, deployment, r.Scheme); err != nil {
+		return nil, err
+	}
+
 	return deployment, nil
 }
 
-func (r *ProcessorReconciler) updateDeployment(proc *streamingruntime.Processor, dep *appsv1.Deployment) {
+func (r *ProcessorReconciler) updateProcessorDeployment(proc *streamingruntime.Processor, dep *appsv1.Deployment) {
+	replicas := proc.Spec.Replicas
+	if replicas == 0 {
+		replicas = 1
+	}
+	dep.Spec.Replicas = &replicas
 	dep.Spec.Template.Spec.Containers = []corev1.Container{proc.Spec.Container}
+}
+
+const defaultJoinerImage = "ghcr.io/vladimirvivien/streaming-runtime/components/joiner:latest"
+
+func (r *JoinerReconciler) createJoinerDeployment(joiner *streamingruntime.Joiner) (*appsv1.Deployment, error) {
+	var replicas int32 = 1
+
+	// resolve container
+	// if not provided, use default image above.
+	var container corev1.Container
+	if joiner.Spec.Container == nil {
+		container = corev1.Container{
+			Name:            joiner.Name,
+			Image:           defaultJoinerImage,
+			ImagePullPolicy: corev1.PullAlways,
+		}
+	} else {
+		container = *joiner.Spec.Container
+	}
+
+	// add service port to container
+	container.Ports = append(container.Ports, corev1.ContainerPort{
+		Name:          "app-port",
+		ContainerPort: joiner.Spec.ServicePort,
+	})
+
+	// validate and set env data
+	if len(joiner.Spec.StreamPaths) < 2 {
+		return nil, fmt.Errorf("joiner requires 2 or more stream paths")
+	}
+	container.Env = []corev1.EnvVar{
+		{Name: "JOINER_SERVICE_PORT", Value: fmt.Sprintf(":%d", joiner.Spec.ServicePort)},
+		{Name: "JOINER_STREAM_PATHS", Value: strings.Join(joiner.Spec.StreamPaths, ",")},
+	}
+
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      joiner.Name,
+			Namespace: joiner.Namespace,
+			Labels:    map[string]string{"app": joiner.Name},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": joiner.Name},
+			},
+			Replicas: &replicas,
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": joiner.Name},
+					Annotations: map[string]string{
+						"dapr.io/enabled":  "true",
+						"dapr.io/app-id":   joiner.Name,
+						"dapr.io/app-port": fmt.Sprintf("%d", joiner.Spec.ServicePort),
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{container},
+				},
+			},
+		},
+	}
+
+	// establish ownership
+	if err := ctrl.SetControllerReference(joiner, deployment, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return deployment, nil
+}
+
+func (r *JoinerReconciler) updateJoinerDeployment(joiner *streamingruntime.Joiner, dep *appsv1.Deployment) {
+	var container corev1.Container
+	if joiner.Spec.Container == nil {
+		container = corev1.Container{
+			Name:            joiner.Name,
+			Image:           defaultJoinerImage,
+			ImagePullPolicy: corev1.PullAlways,
+		}
+	} else {
+		container = *joiner.Spec.Container
+	}
+	dep.Spec.Template.Spec.Containers = []corev1.Container{container}
 }

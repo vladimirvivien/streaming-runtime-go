@@ -1,10 +1,6 @@
 ## Hello-Streaming Example
 
-This directory contains a simple example that deploys a processor to processage streaming messages. The two components
-of this example are:
-
-* `message-gen` is a mock service that publishes message events to the defined topic
-* `message-proc` is a processor that listens for topic events and processes them
+This directory contains a simple example that deploys a Processor component to process streaming event data. 
 
 ### Components
 The example uses several [streaming-runtime components](./manifests/hello-streaming.yaml) to define an event stream and a processor service that will receive the messages
@@ -93,7 +89,7 @@ At this point, you are ready to run the example components.
 
 #### Event streaming broker
 
-This example uses an event streaming platform to send messages from a message generator (message-gen) to a message processor (message-proc).
+This example uses an event streaming broker to send messages from a message generator (message-gen) to a message processor (message-proc).
 Use the following to deploy Redis (ensure to use latest versions with streams support):
 
 ```
@@ -112,7 +108,7 @@ kubectl apply -f https://github.com/vladimirvivien/streaming-runtime-go/blob/mai
 
 The previous command will deploy two applications:
 
-* [`message-gen`](./message-gen) is a simple message generator that sends events to a defined topic.
+* [`message-gen`](../message-gen) is a simple message generator that sends events to a defined topic.
 * [`message-proc`](./message-proc) is a processor that will receive events from the topic for processing 
 
 In this simple example, the processor simply logs the incoming message. You can validate that it is running OK by
@@ -133,15 +129,7 @@ kubectl logs -l app=message-proc -c message-proc
 2022/03/03 17:22:33 /messages invoked: [content-type: application/cloudevents+json, url: ?, data: {"traceid":"00-68a56b48c90ba65167036da7ab0f6a9d-4dc61f63ce5fbea5-00","data":{"message":{"id":440,"text":"time is 2022-03-03 17:22:33.053691534 +0000 UTC m=+3075.855265688"}},"specversion":"1.0","datacontenttype":"application/json","source":"message-gen","pubsubname":"redis-stream","tracestate":"","id":"04a5586b-72de-4c3c-ba2f-922e1147a00f","type":"com.dapr.event.sent","topic":"hello-topic-stream"}
 ```
 ### Building components
-These examples use `ko` for building and publishing container images as shown below.
-
-#### Publishing `message-gen` image:
-
-```
-KO_DOCKER_REPO=ghcr.io/vladimirvivien/streaming-runtime-examples/hello-streaming/message-gen ko publish --bare ./message-gen
-```
-
-Publishing `message-proc` image:
+This example uses `ko` for building and publishing the processor container image as shown below.
 
 ```
 KO_DOCKER_REPO=ghcr.io/vladimirvivien/streaming-runtime-examples/hello-streaming/message-proc ko publish --bare ./message-proc

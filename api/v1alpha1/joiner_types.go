@@ -17,48 +17,46 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// StreamSpec defines the desired state of Stream
-type StreamSpec struct {
-	ClusterStream string   `json:"clusterStream"`
-	Topic         string   `json:"topic"`
-	Recipients    []string `json:"recipients"`
-
+// JoinerSpec defines the desired state of Joiner
+type JoinerSpec struct {
+	ServicePort int32    `json:"servicePort"`
+	StreamPaths []string `json:"streamPaths"`
+	Window      string   `json:"window"`
 	// +optional
-	Route string `json:"route,omitempty"`
+	Expression string `json:"expression"`
 	// +optional
-	Properties map[string]string `json:"properties,omitempty"`
+	Container  *corev1.Container `json:"container"`
+	Recipients []string          `json:"recipients"`
 }
 
-// StreamStatus defines the observed state of Stream
-type StreamStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
+// JoinerStatus defines the observed state of Joiner
+type JoinerStatus struct{}
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// Stream is the Schema for the streams API
-type Stream struct {
+// Joiner is the Schema for the joiners API
+type Joiner struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   StreamSpec   `json:"spec,omitempty"`
-	Status StreamStatus `json:"status,omitempty"`
+	Spec   JoinerSpec   `json:"spec,omitempty"`
+	Status JoinerStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// StreamList contains a list of Stream
-type StreamList struct {
+// JoinerList contains a list of Joiner
+type JoinerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Stream `json:"items"`
+	Items           []Joiner `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Stream{}, &StreamList{})
+	SchemeBuilder.Register(&Joiner{}, &JoinerList{})
 }

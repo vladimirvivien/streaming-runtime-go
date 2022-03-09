@@ -65,34 +65,6 @@ func (r *ClusterStreamReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 
-	// Object deletion
-	// Examine DeletionTimestamp to determine if object is under deletion
-	//if cs.ObjectMeta.DeletionTimestamp.IsZero() {
-	//	// The object is not being deleted, register finalizer for this reconciler.
-	//	if !controllerutil.ContainsFinalizer(&cs, finalizer) {
-	//		controllerutil.AddFinalizer(&cs, finalizer)
-	//		if err := r.Update(ctx, &cs); err != nil {
-	//			return ctrl.Result{}, err
-	//		}
-	//	}
-	//} else {
-	//	// The object is being deleted
-	//	if controllerutil.ContainsFinalizer(&cs, finalizer) {
-	//		if err := r.Delete(ctx, &cs); err != nil {
-	//			return ctrl.Result{}, err
-	//		}
-	//
-	//		// remove our finalizer, update object for eventual garbage collection
-	//		controllerutil.RemoveFinalizer(&cs, finalizer)
-	//		if err := r.Update(ctx, &cs); err != nil {
-	//			return ctrl.Result{}, err
-	//		}
-	//	}
-	//
-	//	// Stop reconciliation as the item is being deleted
-	//	return ctrl.Result{}, nil
-	//}
-
 	// Add associated dapr component if not found
 	component := new(daprcomponents.Component)
 	err = r.Get(ctx, types.NamespacedName{Name: cs.Name, Namespace: cs.Namespace}, component)
@@ -122,28 +94,6 @@ func (r *ClusterStreamReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	} else if err != nil {
 		log.Error(err, "Failed to get Component", "Component.Name", cs.Name, "Component.Namespace", cs.Namespace)
-		return ctrl.Result{}, err
-	}
-
-	// if associated dapr component is found, update it
-	if err := r.Update(ctx, component); err != nil {
-		log.Error(err, "Failed to update pub/sub component",
-			"Namespace", component.Namespace,
-			"Name", component.Name,
-			"Type", component.Spec.Type)
-		return ctrl.Result{}, err
-	}
-
-	// retrieve latest ClusterStream
-	err = r.Get(ctx, req.NamespacedName, cs)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted.
-			log.Info("ClusterStream not found, skipping status update", "Name", req.Name, "Namespace", req.Namespace)
-			return ctrl.Result{}, nil
-		}
-		// Error reading the object - requeue the request.
-		log.Error(err, "Failed to fetch latest ClusterStream", "Name", req.Name, "Namespace", req.Namespace)
 		return ctrl.Result{}, err
 	}
 

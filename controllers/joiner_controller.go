@@ -30,86 +30,85 @@ import (
 	streamingruntime "github.com/vladimirvivien/streaming-runtime/api/v1alpha1"
 )
 
-// ProcessorReconciler reconciles a Processor object
-type ProcessorReconciler struct {
+// JoinerReconciler reconciles a Joiner object
+type JoinerReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=streaming.vivien.io,resources=processors,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=streaming.vivien.io,resources=processors/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=streaming.vivien.io,resources=processors/finalizers,verbs=update
+//+kubebuilder:rbac:groups=streaming.vivien.io,resources=joiners,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=streaming.vivien.io,resources=joiners/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=streaming.vivien.io,resources=joiners/finalizers,verbs=update
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 
-func (r *ProcessorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *JoinerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	proc := new(streamingruntime.Processor)
-	err := r.Get(ctx, req.NamespacedName, proc)
+	// Attempt to find existing object
+	joiner := new(streamingruntime.Joiner)
+	err := r.Get(ctx, req.NamespacedName, joiner)
+	// if object not found, then create it
 	if err != nil {
 		if errors.IsNotFound(err) {
-			log.Info("Processor not found, ignoring", "Name", req.Name, "Namespace", req.Namespace)
+			log.Info("Joiner not found, ignoring", "Name", req.Name, "Namespace", req.Namespace)
 			return ctrl.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
-		log.Error(err, "Failed to fetch Processor", "Name", req.Name, "Namespace", req.Namespace)
+		log.Error(err, "Failed to fetch Joiner", "Name", req.Name, "Namespace", req.Namespace)
 		return ctrl.Result{}, err
 	}
 
-	// is item being deleted?
-	if !proc.ObjectMeta.DeletionTimestamp.IsZero() {
+	// Is object being deleted?
+	if !joiner.ObjectMeta.DeletionTimestamp.IsZero() {
 		return ctrl.Result{}, nil // do nothing, stop reconciliation
 	}
 
-	// Retrieve processor service deployment component
+	// Retrieve joiner deployment component
 	// if not found, create it
 	deployment := new(appsv1.Deployment)
-	err = r.Get(ctx, types.NamespacedName{Name: proc.Name, Namespace: proc.Namespace}, deployment)
+	err = r.Get(ctx, types.NamespacedName{Name: joiner.Name, Namespace: joiner.Namespace}, deployment)
 	if err != nil && errors.IsNotFound(err) {
-		log.V(1).Info("Creating deployment for Processor",
-			"Name", proc.Name,
-			"Namespace", proc.Namespace,
-			"ServicePort", proc.Spec.ServicePort,
+		log.V(1).Info("Creating deployment for Joiner",
+			"Name", joiner.Name,
+			"Namespace", joiner.Namespace,
 		)
 
-		deployment, err = r.createProcessorDeployment(proc)
+		deployment, err = r.createJoinerDeployment(joiner)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 
 		if err := r.Create(ctx, deployment); err != nil {
-			log.Error(err, "Failed to create deployment for Processor",
-				"Name", proc.Name,
-				"Namespace", proc.Namespace,
-				"ServicePort", proc.Spec.ServicePort,
+			log.Error(err, "Failed to create deployment for Joiner",
+				"Name", joiner.Name,
+				"Namespace", joiner.Namespace,
 			)
 			return ctrl.Result{}, err
 		}
 
-		log.Info("Created deployment for Processor successfully",
-			"Name", proc.Name,
-			"Namespace", proc.Namespace,
-			"ServicePort", proc.Spec.ServicePort,
+		log.Info("Created deployment for Joiner successfully",
+			"Name", joiner.Name,
+			"Namespace", joiner.Namespace,
 			"Deployment", deployment.Name,
 		)
 		return ctrl.Result{Requeue: true}, nil
 
 	} else if err != nil {
-		log.Error(err, "Failed to get Processor deployment", "Name", proc.Name, "Namespace", proc.Namespace)
+		log.Error(err, "Failed to get Joiner deployment", "Name", joiner.Name, "Namespace", joiner.Namespace)
 		return ctrl.Result{}, err
 	}
 
-	log.Info("Updated deployment for Processor",
-		"Namespace", proc.Namespace,
-		"Name", proc.Name)
+	log.Info("Updated deployment for Joiner",
+		"Namespace", joiner.Namespace,
+		"Name", joiner.Name)
 
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *JoinerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&streamingruntime.Processor{}).
+		For(&streamingruntime.Joiner{}).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }

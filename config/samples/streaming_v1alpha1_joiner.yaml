@@ -1,0 +1,6 @@
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Joiner
+metadata:
+  name: joiner-sample
+spec:
+  # TODO(user): Add fields here

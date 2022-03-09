@@ -1,0 +1,59 @@
+# Deployment for message generator for hello-stream topic
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-message-gen
+  labels:
+    app: hello-message-gen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-message-gen
+  template:
+    metadata:
+      labels:
+        app: hello-message-gen
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "hello-message-gen"
+    spec:
+      containers:
+        - name: message-gen
+          image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
+          imagePullPolicy: Always
+          env:
+            - name: CLUSTER_STREAM
+              value: "redis-stream"
+            - name: STREAM_TOPIC
+              value: "hello-stream"
+---
+# Deployment for message generator for goodbye-stream topic
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goodbye-message-gen
+  labels:
+    app: goodbye-message-gen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: goodbye-message-gen
+  template:
+    metadata:
+      labels:
+        app: goodbye-message-gen
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "goodbye-message-gen"
+    spec:
+      containers:
+        - name: message-gen
+          image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
+          imagePullPolicy: Always
+          env:
+            - name: CLUSTER_STREAM
+              value: "redis-stream"
+            - name: STREAM_TOPIC
+              value: "goodbye-stream"

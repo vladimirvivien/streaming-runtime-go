@@ -1,0 +1,14 @@
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Joiner
+metadata:
+  name: hello-goodbye-join
+  namespace: default
+spec:
+  streamPaths:
+  - hello
+  - goodbye
+  window: "100ms"
+  expression: "hello.salutation == goodbye.salutation"
+  servicePort: 8080
+  recipients:
+    - messages

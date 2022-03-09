@@ -102,36 +102,6 @@ func (r *StreamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	// Update subscription if found
-	if err := r.Update(ctx, stream); err != nil {
-		log.Error(err, "Failed to update Stream object",
-			"Namespace", stream.Namespace,
-			"Name", stream.Name)
-		return ctrl.Result{}, err
-	} else {
-		// update the dapr.Subscription object as well
-		// Get latest dapr.Subscription
-		err = r.Get(ctx, types.NamespacedName{Name: stream.Name, Namespace: stream.Namespace}, sub)
-		if err != nil {
-			if errors.IsNotFound(err) {
-				log.Info("Subscription object not found for stream, ignoring update", "Name", req.Name, "Namespace", req.Namespace)
-				return ctrl.Result{}, nil
-			}
-			log.Error(err, "Failed to get subscription", "Name", stream.Name, "Namespace", stream.Namespace, "Topic", stream.Spec.Topic)
-			return ctrl.Result{}, err
-		}
-
-		r.updateDaprSubscription(stream, sub)
-		if err := r.Update(ctx, sub); err != nil {
-			log.Error(err, "Failed to update subscription for Stream",
-				"ClusterStream", stream.Spec.ClusterStream,
-				"Namespace", stream.Namespace,
-				"Name", stream.Name,
-				"Topic", stream.Spec.Topic)
-			return ctrl.Result{}, err
-		}
-	}
-
 	log.Info("Updated subscription object",
 		"Namespace", sub.Name,
 		"Name", sub.Name,

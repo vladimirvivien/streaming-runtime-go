@@ -1,0 +1,24 @@
+# permissions for end users to edit joiners.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: joiner-editor-role
+rules:
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - joiners
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - joiners/status
+  verbs:
+  - get

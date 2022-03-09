@@ -71,6 +71,32 @@ rules:
 - apiGroups:
   - streaming.vivien.io
   resources:
+  - joiners
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - joiners/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - joiners/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - streaming.vivien.io
+  resources:
   - processors
   verbs:
   - create
