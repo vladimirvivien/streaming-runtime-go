@@ -52,7 +52,6 @@ spec:
                 type: string
             required:
             - clusterStream
-            - recipients
             - topic
             type: object
           status:

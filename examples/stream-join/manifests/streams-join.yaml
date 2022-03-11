@@ -4,9 +4,9 @@ metadata:
   name: hello-goodbye-join
   namespace: default
 spec:
-  streamPaths:
-  - hello
-  - goodbye
+  streams:
+  - hello-stream
+  - goodbye-stream
   window: "100ms"
   expression: "hello.salutation == goodbye.salutation"
   servicePort: 8080

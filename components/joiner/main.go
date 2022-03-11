@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,29 +9,40 @@ import (
 
 	"github.com/dapr/go-sdk/service/common"
 	daprd "github.com/dapr/go-sdk/service/http"
+	"github.com/vladimirvivien/streaming-runtime/components/k8s"
 )
 
-var(
+var (
 	servicePort = os.Getenv("JOINER_SERVICE_PORT")
-	streamPathsEnv = os.Getenv("JOINER_STREAM_PATHS")
+	streamsEnv  = os.Getenv("JOINER_STREAMS")
+	namespace   = os.Getenv("JOINER_NAMESPACE")
 )
 
 func main() {
 	if servicePort == "" {
 		servicePort = ":8080"
 	}
-
-	if streamPathsEnv == ""  {
-		log.Fatalf("joiner: missing stream paths")
+	if namespace == "" {
+		namespace = "default"
+	}
+	if streamsEnv == "" {
+		log.Fatalf("joiner: evn JOINER_STREAMS not provided")
+	}
+	k8sC, err := k8s.NewClient(namespace)
+	if err != nil {
+		log.Fatalf("joiner: failed to create Kubernetes client: %s", err)
 	}
 
 	svc := daprd.NewService(servicePort)
+	streams := strings.Split(streamsEnv, ",")
 
-	streamPaths := strings.Split(streamPathsEnv, ",")
-
-	for _, path := range streamPaths {
-		if err := svc.AddServiceInvocationHandler(path, streamHandler); err != nil {
-			log.Fatalf("joiner: '%s' path handler failed: %s", path, err)
+	for _, stream := range streams {
+		sub, err := getSubscription(k8sC, stream)
+		if err != nil {
+			log.Fatalf("joiner: failed retrieve subscription object: %s", err)
+		}
+		if err := svc.AddTopicEventHandler(sub, makeHandler(sub.Route)); err != nil {
+			log.Fatalf("joiner: pubsub: %s: failed: %s", sub.PubsubName, err)
 		}
 	}
 
@@ -46,14 +56,24 @@ func main() {
 	log.Println("joiner: started on port ", servicePort)
 }
 
-func streamHandler(_ context.Context, in *common.InvocationEvent) (out *common.Content, err error) {
-	if in == nil {
-		return nil, fmt.Errorf("invocation parameter required")
+func makeHandler(path string) common.TopicEventHandler {
+
+	return func(ctx context.Context, e *common.TopicEvent) (retry bool, err error) {
+		log.Printf("event: [ID: %s, Type: %s; Pubsub: %s; Topic: %s]", e.ID, e.Type, e.PubsubName, e.Topic)
+		return false, nil
 	}
-	log.Printf("stream handler invoked: [content-type: %s, url: %s?%s, data: %s", in.ContentType, in.DataTypeURL, in.QueryString , string(in.Data))
-	return &common.Content{
-		Data:        in.Data,
-		ContentType: in.ContentType,
-		DataTypeURL: in.DataTypeURL,
+
+}
+
+func getSubscription(k8sC *k8s.Client, subName string) (*common.Subscription, error) {
+	sub, err := k8sC.GetSubscription(context.Background(), subName)
+	if err != nil {
+		return nil, err
+	}
+	return &common.Subscription{
+		PubsubName: sub.Spec.Pubsubname,
+		Topic:      sub.Spec.Topic,
+		Metadata:   nil,
+		Route:      sub.Spec.Routes.Default,
 	}, nil
 }

@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dapr-app-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: dapr-app-role
+  namespace: default
+rules:
+- apiGroups:
+  - dapr.io
+  resources:
+  - subscriptions
+  verbs:
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dapr-app-role-binding
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dapr-app-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default

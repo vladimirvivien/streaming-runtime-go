@@ -7,8 +7,7 @@ spec:
   clusterStream: "redis-stream"
   topic: "hello-stream"
   route: "/hello"
-  recipients:
-    - hello-goodbye-join
+
 ---
 apiVersion: streaming.vivien.io/v1alpha1
 kind: Stream
@@ -19,5 +18,3 @@ spec:
   clusterStream: "redis-stream"
   topic: "goodbye-stream"
   route: "/goodbye"
-  recipients:
-    - hello-goodbye-join

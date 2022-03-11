@@ -854,7 +854,7 @@ spec:
               servicePort:
                 format: int32
                 type: integer
-              streamPaths:
+              streams:
                 items:
                   type: string
                 type: array
@@ -863,7 +863,7 @@ spec:
             required:
             - recipients
             - servicePort
-            - streamPaths
+            - streams
             - window
             type: object
           status:
@@ -1725,7 +1725,6 @@ spec:
                 type: string
             required:
             - clusterStream
-            - recipients
             - topic
             type: object
           status:

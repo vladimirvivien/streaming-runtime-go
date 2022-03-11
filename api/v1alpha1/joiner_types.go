@@ -24,7 +24,7 @@ import (
 // JoinerSpec defines the desired state of Joiner
 type JoinerSpec struct {
 	ServicePort int32    `json:"servicePort"`
-	StreamPaths []string `json:"streamPaths"`
+	Streams     []string `json:"streams"`
 	Window      string   `json:"window"`
 	// +optional
 	Expression string `json:"expression"`

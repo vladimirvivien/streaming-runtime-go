@@ -183,12 +183,13 @@ func (r *JoinerReconciler) createJoinerDeployment(joiner *streamingruntime.Joine
 	})
 
 	// validate and set env data
-	if len(joiner.Spec.StreamPaths) < 2 {
-		return nil, fmt.Errorf("joiner requires 2 or more stream paths")
+	if len(joiner.Spec.Streams) < 2 {
+		return nil, fmt.Errorf("joiner requires 2 or more streams")
 	}
 	container.Env = []corev1.EnvVar{
+		{Name: "JOINER_NAMESPACE", Value: fmt.Sprintf(":%s", joiner.Namespace)},
 		{Name: "JOINER_SERVICE_PORT", Value: fmt.Sprintf(":%d", joiner.Spec.ServicePort)},
-		{Name: "JOINER_STREAM_PATHS", Value: strings.Join(joiner.Spec.StreamPaths, ",")},
+		{Name: "JOINER_STREAMS", Value: strings.Join(joiner.Spec.Streams, ",")},
 	}
 
 	deployment := &appsv1.Deployment{

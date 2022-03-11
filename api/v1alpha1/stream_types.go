@@ -22,10 +22,11 @@ import (
 
 // StreamSpec defines the desired state of Stream
 type StreamSpec struct {
-	ClusterStream string   `json:"clusterStream"`
-	Topic         string   `json:"topic"`
-	Recipients    []string `json:"recipients"`
+	ClusterStream string `json:"clusterStream"`
+	Topic         string `json:"topic"`
 
+	// +optional
+	Recipients []string `json:"recipients"`
 	// +optional
 	Route string `json:"route,omitempty"`
 	// +optional
