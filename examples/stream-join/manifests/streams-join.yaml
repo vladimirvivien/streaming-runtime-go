@@ -10,5 +10,9 @@ spec:
   window: "100ms"
   expression: "hello.salutation == goodbye.salutation"
   servicePort: 8080
+  container:
+    name: hello-goodbye-join
+    image: ghcr.io/vladimirvivien/streaming-runtime/components/joiner:latest
+    imagePullPolicy: Always
   recipients:
     - messages

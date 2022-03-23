@@ -40,6 +40,7 @@ type JoinerReconciler struct {
 //+kubebuilder:rbac:groups=streaming.vivien.io,resources=joiners/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=streaming.vivien.io,resources=joiners/finalizers,verbs=update
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=streaming.vivien.io,resources=streams,verbs=get;list;watch;create;update;patch;delete
 
 func (r *JoinerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
@@ -73,7 +74,7 @@ func (r *JoinerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			"Namespace", joiner.Namespace,
 		)
 
-		deployment, err = r.createJoinerDeployment(joiner)
+		deployment, err = r.createJoinerDeployment(ctx, joiner)
 		if err != nil {
 			return ctrl.Result{}, err
 		}

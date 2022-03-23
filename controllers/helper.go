@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -160,7 +162,7 @@ func (r *ProcessorReconciler) updateProcessorDeployment(proc *streamingruntime.P
 
 const defaultJoinerImage = "ghcr.io/vladimirvivien/streaming-runtime/components/joiner:latest"
 
-func (r *JoinerReconciler) createJoinerDeployment(joiner *streamingruntime.Joiner) (*appsv1.Deployment, error) {
+func (r *JoinerReconciler) createJoinerDeployment(ctx context.Context, joiner *streamingruntime.Joiner) (*appsv1.Deployment, error) {
 	var replicas int32 = 1
 
 	// resolve container
@@ -186,10 +188,15 @@ func (r *JoinerReconciler) createJoinerDeployment(joiner *streamingruntime.Joine
 	if len(joiner.Spec.Streams) < 2 {
 		return nil, fmt.Errorf("joiner requires 2 or more streams")
 	}
+
+	streamInfo, err := r.collateStreamInfo(ctx, joiner)
+	if err != nil {
+		return nil, err
+	}
 	container.Env = []corev1.EnvVar{
 		{Name: "JOINER_NAMESPACE", Value: fmt.Sprintf(":%s", joiner.Namespace)},
 		{Name: "JOINER_SERVICE_PORT", Value: fmt.Sprintf(":%d", joiner.Spec.ServicePort)},
-		{Name: "JOINER_STREAMS", Value: strings.Join(joiner.Spec.Streams, ",")},
+		{Name: "JOINER_STREAMS_INFO", Value: strings.Join(streamInfo, ";")},
 	}
 
 	deployment := &appsv1.Deployment{
@@ -239,4 +246,24 @@ func (r *JoinerReconciler) updateJoinerDeployment(joiner *streamingruntime.Joine
 		container = *joiner.Spec.Container
 	}
 	dep.Spec.Template.Spec.Containers = []corev1.Container{container}
+}
+
+// collateStreamInfo returns Stream info as a []string
+// where each element is ClusterStream|Topic|Route
+func (r *JoinerReconciler) collateStreamInfo(ctx context.Context, joiner *streamingruntime.Joiner) ([]string, error) {
+	var result []string
+	for _, streamName := range joiner.Spec.Streams {
+		stream := new(streamingruntime.Stream)
+		err := r.Get(ctx, types.NamespacedName{Namespace: joiner.Namespace, Name: streamName}, stream)
+		if err != nil {
+			log.Printf("JoinerReconciler: failed to retrieve Stream: %s", err)
+			return nil, err
+		}
+		route := stream.Spec.Route
+		if route == "" {
+			route = stream.Spec.Topic
+		}
+		result = append(result, fmt.Sprintf("%s|%s|%s", stream.Spec.ClusterStream, stream.Spec.Topic, route))
+	}
+	return result, nil
 }

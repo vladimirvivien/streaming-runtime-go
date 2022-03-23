@@ -11,8 +11,9 @@ metadata:
   name: hello-goodbye-join
   namespace: default
 spec:
-  leftPath: "hello"
-  rightPath: "goodbye"
+  streams: # list of stream refs 
+    - stream-name0
+    - stream-name1
   window: "100ms"
   expression: "hello.salutation == goodbye.salutation"
   container:
