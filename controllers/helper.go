@@ -189,14 +189,20 @@ func (r *JoinerReconciler) createJoinerDeployment(ctx context.Context, joiner *s
 		return nil, fmt.Errorf("joiner requires 2 or more streams")
 	}
 
+	if joiner.Spec.Target == "" {
+		return nil, fmt.Errorf("joiner missing valid target")
+	}
+
 	streamInfo, err := r.collateStreamInfo(ctx, joiner)
 	if err != nil {
 		return nil, err
 	}
+
 	container.Env = []corev1.EnvVar{
-		{Name: "JOINER_NAMESPACE", Value: fmt.Sprintf(":%s", joiner.Namespace)},
 		{Name: "JOINER_SERVICE_PORT", Value: fmt.Sprintf(":%d", joiner.Spec.ServicePort)},
 		{Name: "JOINER_STREAMS_INFO", Value: strings.Join(streamInfo, ";")},
+		{Name: "JOINER_TARGET", Value: r.validateTarget(joiner.Spec.Target)},
+		{Name: "JOINER_WINDOW_SIZE", Value: joiner.Spec.Window	},
 	}
 
 	deployment := &appsv1.Deployment{
@@ -266,4 +272,12 @@ func (r *JoinerReconciler) collateStreamInfo(ctx context.Context, joiner *stream
 		result = append(result, fmt.Sprintf("%s|%s|%s", stream.Spec.ClusterStream, stream.Spec.Topic, route))
 	}
 	return result, nil
+}
+
+// validateTarget returns component/route if ok, or component/component if route is missing.
+func (r *JoinerReconciler) validateTarget(target string) string {
+	if strings.Index(target, "/") == -1 {
+		return fmt.Sprintf("%s/%s", target, target)
+	}
+	return target
 }

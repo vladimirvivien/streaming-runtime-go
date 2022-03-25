@@ -7,12 +7,7 @@ spec:
   streams:
   - hello-stream
   - goodbye-stream
-  window: "100ms"
+  window: 14s
   expression: "hello.salutation == goodbye.salutation"
   servicePort: 8080
-  container:
-    name: hello-goodbye-join
-    image: ghcr.io/vladimirvivien/streaming-runtime/components/joiner:latest
-    imagePullPolicy: Always
-  recipients:
-    - messages
+  target: message-proc/messages

@@ -18,8 +18,10 @@ spec:
   expression: "hello.salutation == goodbye.salutation"
   container:
     image:
-  recipients:
-    - messages
+  # target: the component[/route] where to send joined messages
+  # if route is not provided, component/component is used for routing.
+  target: stream-name2/message 
+
 ```
 
 ## Building components

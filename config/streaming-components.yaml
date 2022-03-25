@@ -847,10 +847,6 @@ spec:
                 type: object
               expression:
                 type: string
-              recipients:
-                items:
-                  type: string
-                type: array
               servicePort:
                 format: int32
                 type: integer
@@ -858,12 +854,14 @@ spec:
                 items:
                   type: string
                 type: array
+              target:
+                type: string
               window:
                 type: string
             required:
-            - recipients
             - servicePort
             - streams
+            - target
             - window
             type: object
           status:

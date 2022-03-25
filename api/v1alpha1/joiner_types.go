@@ -29,8 +29,8 @@ type JoinerSpec struct {
 	// +optional
 	Expression string `json:"expression"`
 	// +optional
-	Container  *corev1.Container `json:"container"`
-	Recipients []string          `json:"recipients"`
+	Container *corev1.Container `json:"container"`
+	Target    string            `json:"target"`
 }
 
 // JoinerStatus defines the observed state of Joiner
