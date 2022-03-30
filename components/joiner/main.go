@@ -25,14 +25,14 @@ type eventStore struct {
 }
 
 var (
-	servicePort   = os.Getenv("JOINER_SERVICE_PORT")      // service port
-	stream0Env    = os.Getenv("JOINER_STREAM0_INFO")      // a |-separated list of info for stream 0
-	stream1Env    = os.Getenv("JOINER_STREAM1_INFO")      // a |-separated list of info for stream 1
-	topics        []string                                // names of known topics
-	targetEnv     = os.Getenv("JOINER_TARGET")            // component[/path] to route result
-	windowSizeEnv = os.Getenv("JOINER_WINDOW_SIZE")       // window size formatted as Go duration   (i.e. 1m, 3ms, etc)
-	filterExprEnv = os.Getenv("JOINER_FILTER_EXPRESSION") // expression used to filter data from stream
-	dataExprEnv   = os.Getenv("JOINER_DATA_EXPRESSION")   // expression used to generate data output from streams
+	servicePort   = os.Getenv("JOINER_SERVICE_PORT")             // service port
+	stream0Env    = os.Getenv("JOINER_STREAM0_INFO")             // a |-separated list of info for stream 0
+	stream1Env    = os.Getenv("JOINER_STREAM1_INFO")             // a |-separated list of info for stream 1
+	topics        []string                                       // names of known topics
+	targetEnv     = os.Getenv("JOINER_TARGET")                   // component[/path] to route result
+	windowSizeEnv = os.Getenv("JOINER_WINDOW_SIZE")              // window size formatted as Go duration   (i.e. 1m, 3ms, etc)
+	filterExprEnv = os.Getenv("JOINER_SELECT_FILTER_EXPRESSION") // expression used to filter data from stream
+	dataExprEnv   = os.Getenv("JOINER_SELECT_DATA_EXPRESSION")   // expression used to generate data output from streams
 
 	inputChan  chan *common.TopicEvent
 	outputChan chan []byte
@@ -41,6 +41,7 @@ var (
 	window *time.Ticker
 
 	filterProg cel.Program
+	dataProg cel.Program
 )
 
 func (s *eventStore) reset() {
@@ -113,13 +114,21 @@ func main() {
 		}
 	}
 
-	// setup common expression lang (cel) program
+	// setup common expression lang (cel) programs
+	// for data selection and data filtering
 	if filterExprEnv != "" {
 		prog, err := compileCelProg(filterExprEnv, topics...)
 		if err != nil {
 			log.Fatalf("joiner: filter expression: %s", err)
 		}
 		filterProg = prog
+	}
+	if dataExprEnv != "" {
+		prog, err := compileCelProg(dataExprEnv, topics...)
+		if err != nil {
+			log.Fatalf("joiner: data selection expression: %s", err)
+		}
+		dataProg = prog
 	}
 
 	// setup event processors
@@ -258,44 +267,66 @@ func compileCelProg(expr string, variables ...string) (cel.Program, error) {
 	return prog, nil
 }
 
-// aggregatedEvents applies left join semantics, then apply filter and join expressions
+// aggregatedEvents applies left join semantics to select and filter data
 func aggregateEvents(store *eventStore) (interface{}, error) {
 	store.RLock()
 	defer store.RUnlock()
 
 	var bucket []interface{}
 	topicA, topicB := topics[0], topics[1]
-	log.Printf("applying filter [for topics %#v]: %s",topics, filterExprEnv)
 	for _, eventA := range store.streams[topicA] {
 		for _, eventB := range store.streams[topicB] {
 			// TODO 1) apply filter expression 2) if ok, apply join expression 3) send to output
-			if filterProg != nil {
-				exprMap := map[string]interface{}{
-					topicA: eventA.Data,
-					topicB: eventB.Data,
-				}
-
-				result, _, err := filterProg.Eval(exprMap)
-				if err != nil {
+			shouldCollect, err := shouldCollect(eventA, eventB, filterProg)
+			if err != nil {
+				return nil, err
+			}
+			if shouldCollect {
+				data, err := collectData(eventA, eventB, dataProg)
+				if err !=  nil {
 					return nil, err
 				}
-
-				if result.Type().TypeName() != "bool" {
-					return nil, fmt.Errorf("filter expression must return a boolean")
-				}
-
-				shouldCollect := result.Value().(bool)
-				if shouldCollect {
-					log.Printf("aggregating eventA: %s; eventB: %s", string(eventA.RawData), string(eventB.RawData))
-					bucket = append(bucket, eventA.Data, eventB.Data)
-				}
-			}else{
-				log.Println("filter program is nil")
+				bucket = append(bucket, data)
 			}
 		}
 	}
 
 	return bucket, nil
+}
+
+func collectData(eventA, eventB *common.TopicEvent, prog cel.Program) (interface{},error) {
+	dataMap := map[string]interface{}{
+		eventA.Topic: eventA.Data,
+		eventB.Topic: eventB.Data,
+	}
+	if prog  != nil {
+		result, _, err := prog.Eval(dataMap)
+		if err != nil {
+			return nil, err
+		}
+		return result.Value(), nil
+	}
+	return dataMap, nil
+}
+
+func shouldCollect(eventA, eventB *common.TopicEvent, prog cel.Program) (bool, error) {
+	if filterProg != nil {
+		dataMap := map[string]interface{}{
+			eventA.Topic: eventA.Data,
+			eventB.Topic: eventB.Data,
+		}
+		filterResult, _, err := prog.Eval(dataMap)
+		if err != nil {
+			return false, err
+		}
+		if filterResult.Type().TypeName() != "bool" {
+			return false, fmt.Errorf("select: filter expression: must return a boolean")
+		}
+		shouldCollect := filterResult.Value().(bool)
+		return shouldCollect, nil
+	} else {
+		return true, nil // always collect if no program provided.
+	}
 }
 
 func logStore(store *eventStore) {

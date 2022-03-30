@@ -204,8 +204,15 @@ func (r *JoinerReconciler) createJoinerDeployment(ctx context.Context, joiner *s
 		{Name: "JOINER_STREAM1_INFO", Value: streamInfo[1]},
 		{Name: "JOINER_TARGET", Value: r.validateTarget(joiner.Spec.Target)},
 		{Name: "JOINER_WINDOW_SIZE", Value: joiner.Spec.Window},
-		{Name: "JOINER_FILTER_EXPRESSION", Value: joiner.Spec.FilterExpression},
-		{Name: "JOINER_DATA_EXPRESSION", Value: joiner.Spec.DataExpression},
+	}
+
+	// Setup data selection
+	if joiner.Spec.Select != nil {
+		container.Env = append(
+			container.Env,
+			corev1.EnvVar{Name: "JOINER_SELECT_FILTER_EXPRESSION", Value: joiner.Spec.Select.Where},
+			corev1.EnvVar{Name: "JOINER_SELECT_DATA_EXPRESSION", Value: joiner.Spec.Select.Data},
+		)
 	}
 
 	deployment := &appsv1.Deployment{

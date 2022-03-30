@@ -849,6 +849,14 @@ spec:
                 type: string
               filterExpression:
                 type: string
+              select:
+                description: DataSelection defines data selection expressions to select and filter out streamed events
+                properties:
+                  data:
+                    type: string
+                  where:
+                    type: string
+                type: object
               servicePort:
                 format: int32
                 type: integer

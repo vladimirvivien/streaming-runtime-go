@@ -32,7 +32,17 @@ type JoinerSpec struct {
 	// +optional
 	DataExpression string `json:"dataExpression"`
 	// +optional
+	Select *DataSelection `json:"select,omitempty"`
+	// +optional
 	Container *corev1.Container `json:"container"`
+}
+
+// DataSelection defines data selection expressions to select and filter out streamed events
+type DataSelection struct {
+	// +optional
+	Data string `json:"data"`
+	// +optional
+	Where string `json:"where"`
 }
 
 // JoinerStatus defines the observed state of Joiner

@@ -8,6 +8,8 @@ spec:
   - hello
   - goodbye
   window: 14s
-  filterExpression: "int(hello.message['id']) > 5 && goodbye.message.id >= 5.0"
+  select:
+    data: "string(hello.message.id) + '~' + hello.message.text"
+    where: "int(hello.message['id']) > 5 && goodbye.message.id >= 5.0"
   servicePort: 8080
   target: message-proc/messages
