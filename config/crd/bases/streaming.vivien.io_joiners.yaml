@@ -1168,7 +1168,9 @@ spec:
                 required:
                 - name
                 type: object
-              expression:
+              dataExpression:
+                type: string
+              filterExpression:
                 type: string
               servicePort:
                 format: int32

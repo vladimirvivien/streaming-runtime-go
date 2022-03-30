@@ -5,9 +5,9 @@ metadata:
   namespace: default
 spec:
   streams:
-  - hello-stream
-  - goodbye-stream
+  - hello
+  - goodbye
   window: 14s
-  expression: "hello.salutation == goodbye.salutation"
+  filterExpression: "int(hello.message['id']) > 5 && goodbye.message.id >= 5.0"
   servicePort: 8080
   target: message-proc/messages

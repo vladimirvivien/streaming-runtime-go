@@ -1,20 +1,20 @@
 apiVersion: streaming.vivien.io/v1alpha1
 kind: Stream
 metadata:
-  name: hello-stream
+  name: hello
   namespace: default
 spec:
   clusterStream: "redis-stream"
-  topic: "hello-stream"
+  topic: "hello"
   route: "/hello"
 
 ---
 apiVersion: streaming.vivien.io/v1alpha1
 kind: Stream
 metadata:
-  name: goodbye-stream
+  name: goodbye
   namespace: default
 spec:
   clusterStream: "redis-stream"
-  topic: "goodbye-stream"
+  topic: "goodbye"
   route: "/goodbye"

@@ -26,11 +26,13 @@ type JoinerSpec struct {
 	ServicePort int32    `json:"servicePort"`
 	Streams     []string `json:"streams"`
 	Window      string   `json:"window"`
+	Target      string   `json:"target"`
 	// +optional
-	Expression string `json:"expression"`
+	FilterExpression string `json:"filterExpression"`
+	// +optional
+	DataExpression string `json:"dataExpression"`
 	// +optional
 	Container *corev1.Container `json:"container"`
-	Target    string            `json:"target"`
 }
 
 // JoinerStatus defines the observed state of Joiner

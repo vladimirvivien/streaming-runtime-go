@@ -185,8 +185,8 @@ func (r *JoinerReconciler) createJoinerDeployment(ctx context.Context, joiner *s
 	})
 
 	// validate and set env data
-	if len(joiner.Spec.Streams) < 2 {
-		return nil, fmt.Errorf("joiner requires 2 or more streams")
+	if len(joiner.Spec.Streams) != 2 {
+		return nil, fmt.Errorf("joiner must have 2 input streams")
 	}
 
 	if joiner.Spec.Target == "" {
@@ -200,9 +200,12 @@ func (r *JoinerReconciler) createJoinerDeployment(ctx context.Context, joiner *s
 
 	container.Env = []corev1.EnvVar{
 		{Name: "JOINER_SERVICE_PORT", Value: fmt.Sprintf(":%d", joiner.Spec.ServicePort)},
-		{Name: "JOINER_STREAMS_INFO", Value: strings.Join(streamInfo, ";")},
+		{Name: "JOINER_STREAM0_INFO", Value: streamInfo[0]},
+		{Name: "JOINER_STREAM1_INFO", Value: streamInfo[1]},
 		{Name: "JOINER_TARGET", Value: r.validateTarget(joiner.Spec.Target)},
-		{Name: "JOINER_WINDOW_SIZE", Value: joiner.Spec.Window	},
+		{Name: "JOINER_WINDOW_SIZE", Value: joiner.Spec.Window},
+		{Name: "JOINER_FILTER_EXPRESSION", Value: joiner.Spec.FilterExpression},
+		{Name: "JOINER_DATA_EXPRESSION", Value: joiner.Spec.DataExpression},
 	}
 
 	deployment := &appsv1.Deployment{
