@@ -1,11 +1,10 @@
 # Joiner
 
-The `Joiner` joins streaming elements from two `Stream` components within a specified time window.
+The `Joiner` component joins streaming elements from two `Stream` components within a specified time window.
 
 * Originally, it will only support tumbling window
-* Supports only left-join semantics when applying join expressions
-* Supports only JSON-encoded date
-* Ability to specify an expression used to join the data
+* Supports only JSON-encoded data
+* Support for data selection and data filtering expressions
 
 ## Joiner example
 
@@ -16,17 +15,38 @@ metadata:
   name: hello-goodbye-join
   namespace: default
 spec:
-  streams:
-    - hello-stream
-    - goodbye-stream
-  window: "100ms"
-  expression: "hello.salutation == goodbye.salutation"
+  streams: # list of stream referenced
+    - hello
+    - goodbye
+  window: 14s
+  select: # event filter and selection expressions using CEL
+    data: "string(hello.message.id) + '~' + hello.message.text"
+    where: "int(hello.message['id']) > 5 && goodbye.message.id >= 5.0"
+  servicePort: 8080
+
+  # target: the component[/route] where to send joined messages
+  # if route is not provided, component/component is used for routing.
+  target: message-proc/messages
+
+  # Optional spec.container section to specify image of Joiner component
+  # If not provided, the latest version will be used
   container:
-    image:
-  recipients:
-    - messages
+    name: message-proc
+    image: ghcr.io/vladimirvivien/streaming-runtime/components/joiner:latest
+    imagePullPolicy: Always
 ```
 
-In the previous yaml snippet, joiner `hello-goodbye-join` is set up to receive data from upstream topics on paths
-`hello` and `goodbye` within a 100 milliseconds window where `hello.salutation == goodbye.salutation` is true. Joined
-data will be forwarded to recipient component `messages`.
+In the previous yaml snippet, joiner `hello-goodbye-join` is set up to receive data from upstream topics
+`hello` and `goodbye` within a 14 sec window. The component uses `spec.select` to specify data selection and
+data filtering expressions:
+
+```yaml
+  select: # event filter and selection expressions using CEL
+    data: "string(hello.message.id) + '~' + hello.message.text"
+    where: "int(hello.message['id']) > 5 && goodbye.message.id >= 5.0"
+```
+
+Element `spec.select.data` specifies an expression for specifying how to shape the data collected. Element
+`spec.select.where` specifies an expression to specifying how to filter the streaming events.
+
+> See the full example for joiner [here](../examples/stream-join).

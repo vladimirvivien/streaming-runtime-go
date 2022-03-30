@@ -1,28 +1,9 @@
 # Joiner
 
-The `Joiner` joins streaming elements from two `Stream` components within a specified time window.
+The `Joiner` joins streaming elements from two `Stream` components within a specified time window. The component also
+supports the ability to specify data filtering and selection expressions for the aggregated elements.
 
-## Joiner example
-
-```yaml
-apiVersion: streaming.vivien.io/v1alpha1
-kind: Joiner
-metadata:
-  name: hello-goodbye-join
-  namespace: default
-spec:
-  streams: # list of stream refs 
-    - stream-name0
-    - stream-name1
-  window: "100ms"
-  expression: "hello.salutation == goodbye.salutation"
-  container:
-    image:
-  # target: the component[/route] where to send joined messages
-  # if route is not provided, component/component is used for routing.
-  target: stream-name2/message 
-
-```
+> Read more about `Joiner` [here](../../docs/joiner-component.md).
 
 ## Building components
 This component ca be built and deployed using `ko` as is shown below.
