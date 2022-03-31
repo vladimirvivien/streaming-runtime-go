@@ -45,6 +45,32 @@ rules:
 - apiGroups:
   - streaming.vivien.io
   resources:
+  - channels
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - channels/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - channels/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - streaming.vivien.io
+  resources:
   - clusterstreams
   verbs:
   - create

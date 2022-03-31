@@ -21,42 +21,46 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// JoinerSpec defines the desired state of Joiner
-type JoinerSpec struct {
-	ServicePort int32    `json:"servicePort"`
-	Streams     []string `json:"streams"`
-	Window      string   `json:"window"`
-	Target      string   `json:"target"`
+// ChannelSpec defines the desired state of Channel
+type ChannelSpec struct {
+	ServicePort int32  `json:"servicePort"`
+	Window      string `json:"window"`
+	Target      string `json:"target"`
+	// +optional
+	ServiceRoute string `json:"serviceRoute"`
 	// +optional
 	Select *DataSelection `json:"select,omitempty"`
 	// +optional
 	Container *corev1.Container `json:"container"`
 }
 
-// JoinerStatus defines the observed state of Joiner
-type JoinerStatus struct{}
+// ChannelStatus defines the observed state of Channel
+type ChannelStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+}
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// Joiner is the Schema for the joiners API
-type Joiner struct {
+// Channel is the Schema for the channels API
+type Channel struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   JoinerSpec   `json:"spec,omitempty"`
-	Status JoinerStatus `json:"status,omitempty"`
+	Spec   ChannelSpec   `json:"spec,omitempty"`
+	Status ChannelStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// JoinerList contains a list of Joiner
-type JoinerList struct {
+// ChannelList contains a list of Channel
+type ChannelList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Joiner `json:"items"`
+	Items           []Channel `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Joiner{}, &JoinerList{})
+	SchemeBuilder.Register(&Channel{}, &ChannelList{})
 }

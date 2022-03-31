@@ -22,6 +22,8 @@ spec:
           image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
           imagePullPolicy: Always
           env:
+            - name: MESSAGE_EXPR # required: CEL expression for message
+              value: '{"id": id, "greeting":"hello", "location":"world", "timestamp":timestamp}'
             - name: CLUSTER_STREAM
               value: "redis-stream"
             - name: STREAM_TOPIC

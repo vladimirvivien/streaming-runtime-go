@@ -18,11 +18,14 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	daprcomponents "github.com/dapr/dapr/pkg/apis/components/v1alpha1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -31,10 +34,6 @@ import (
 
 	streamingruntime "github.com/vladimirvivien/streaming-runtime/api/v1alpha1"
 )
-
-//var (
-//	finalizer = "clusterstream.streaming.vivien.io/finalizer"
-//)
 
 // ClusterStreamReconciler reconciles a ClusterStream object
 type ClusterStreamReconciler struct {
@@ -71,7 +70,7 @@ func (r *ClusterStreamReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if err != nil && errors.IsNotFound(err) {
 		// New component
 		componentType := fmt.Sprintf("pubsub.%s", cs.Spec.Protocol)
-		component, err = r.createDaprComponent(componentType, cs)
+		component, err = r.createClusterStream(ctx, componentType, cs)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -123,4 +122,43 @@ func (r *ClusterStreamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&streamingruntime.ClusterStream{}).
 		Owns(&daprcomponents.Component{}).
 		Complete(r)
+}
+
+// createClusterStream is a helper method to create v1alpha1 Dapr Component API objects
+func (r *ClusterStreamReconciler) createClusterStream(ctx context.Context, componentType string, clusterStream *streamingruntime.ClusterStream) (*daprcomponents.Component, error) {
+	log := log.FromContext(ctx)
+	properties := clusterStream.Spec.Properties
+	var componentMetadata []daprcomponents.MetadataItem
+	for k, v := range properties {
+		value, err := json.Marshal(v)
+		if err != nil {
+			return nil, fmt.Errorf("component metadata encoding failed: %s", err)
+		}
+		componentMetadata = append(componentMetadata, daprcomponents.MetadataItem{
+			Name: k,
+			Value: daprcomponents.DynamicValue{
+				JSON: apiextensionsv1.JSON{Raw: value},
+			},
+		})
+	}
+
+	component := &daprcomponents.Component{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clusterStream.Name,
+			Namespace: clusterStream.Namespace,
+		},
+		Spec: daprcomponents.ComponentSpec{
+			Type:     componentType,
+			Version:  "v1",
+			Metadata: componentMetadata,
+		},
+	}
+
+	log.Info("Component created successfully", "Component.Name", component.Name, "Component.Namespace", component.Namespace)
+
+	// establish object ownership
+	if err := ctrl.SetControllerReference(clusterStream, component, r.Scheme); err != nil {
+		return nil, err
+	}
+	return component, nil
 }

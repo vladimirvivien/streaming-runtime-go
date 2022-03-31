@@ -18,9 +18,11 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	daprsubscriptions "github.com/dapr/dapr/pkg/apis/subscriptions/v2alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -75,7 +77,7 @@ func (r *StreamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		)
 
 		// New Subscription component
-		sub, err = r.createDaprSubscription(stream)
+		sub, err = r.createDaprSubscription(ctx, stream)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -116,4 +118,42 @@ func (r *StreamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&streamingruntime.Stream{}).
 		Owns(&daprsubscriptions.Subscription{}).
 		Complete(r)
+}
+
+func (r *StreamReconciler) createDaprSubscription(_ context.Context, stream *streamingruntime.Stream) (*daprsubscriptions.Subscription, error) {
+	// Prepare subscription object for saving into statestore
+	route := stream.Spec.Route
+	if route == "" {
+		route = fmt.Sprintf("/%s", stream.Spec.Topic)
+	}
+
+	sub := &daprsubscriptions.Subscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      stream.Name,
+			Namespace: stream.Namespace,
+		},
+		Spec: daprsubscriptions.SubscriptionSpec{
+			Pubsubname: stream.Spec.ClusterStream,
+			Topic:      stream.Spec.Topic,
+			Metadata:   nil,
+			Routes: daprsubscriptions.Routes{
+				Default: route,
+			},
+		},
+		Scopes: stream.Spec.Recipients,
+	}
+
+	// establish object ownership
+	if err := ctrl.SetControllerReference(stream, sub, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return sub, nil
+}
+
+func (r *StreamReconciler) updateDaprSubscription(stream *streamingruntime.Stream, sub *daprsubscriptions.Subscription) {
+	sub.Spec.Topic = stream.Spec.Topic
+	sub.Spec.Pubsubname = stream.Spec.ClusterStream
+	sub.Spec.Routes.Default = stream.Spec.Route
+	sub.Scopes = stream.Spec.Recipients
 }

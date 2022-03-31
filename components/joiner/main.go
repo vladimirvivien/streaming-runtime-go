@@ -15,8 +15,7 @@ import (
 	"github.com/dapr/go-sdk/service/common"
 	daprd "github.com/dapr/go-sdk/service/http"
 	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/checker/decls"
-	exprv1alpha1 "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
+	"github.com/vladimirvivien/streaming-runtime/components/support"
 )
 
 type eventStore struct {
@@ -41,7 +40,7 @@ var (
 	window *time.Ticker
 
 	filterProg cel.Program
-	dataProg cel.Program
+	dataProg   cel.Program
 )
 
 func (s *eventStore) reset() {
@@ -83,7 +82,7 @@ func main() {
 		log.Fatalf("joiner: client failed: %s", err)
 	}
 	defer client.Close()
-	targetParts, err := getTargetParts()
+	targetParts, err := support.GetTargetParts(targetEnv)
 	if err != nil {
 		log.Fatalf("joiner: target: %s", err)
 	}
@@ -117,14 +116,14 @@ func main() {
 	// setup common expression lang (cel) programs
 	// for data selection and data filtering
 	if filterExprEnv != "" {
-		prog, err := compileCelProg(filterExprEnv, topics...)
+		prog, err := support.CompileCELProg(filterExprEnv, topics...)
 		if err != nil {
 			log.Fatalf("joiner: filter expression: %s", err)
 		}
 		filterProg = prog
 	}
 	if dataExprEnv != "" {
-		prog, err := compileCelProg(dataExprEnv, topics...)
+		prog, err := support.CompileCELProg(dataExprEnv, topics...)
 		if err != nil {
 			log.Fatalf("joiner: data selection expression: %s", err)
 		}
@@ -152,19 +151,6 @@ func makeEventHandler(inputChan chan *common.TopicEvent) common.TopicEventHandle
 	return func(ctx context.Context, e *common.TopicEvent) (retry bool, err error) {
 		inputChan <- e
 		return false, nil
-	}
-}
-
-func getTargetParts() ([]string, error) {
-	parts := strings.Split(targetEnv, "/")
-	switch {
-	case len(parts) > 1:
-		return parts, nil
-	case len(parts) == 1:
-		parts = append(parts, parts[0])
-		return parts, nil
-	default:
-		return nil, fmt.Errorf("target malformed")
 	}
 }
 
@@ -196,7 +182,7 @@ func startInputLoop(ctx context.Context, window *time.Ticker, input chan *common
 				store.reset()
 			case <-ctx.Done():
 				log.Println("joiner: event processor done!")
-				break
+				return
 			}
 		}
 	}()
@@ -241,32 +227,6 @@ func getSubscription(streamInfo string) (*common.Subscription, error) {
 	}, nil
 }
 
-func compileCelProg(expr string, variables ...string) (cel.Program, error) {
-	log.Printf(`compiling CEL program: "%s"; variables: %v`, expr, variables)
-	var varDecls []*exprv1alpha1.Decl
-	for _, variable := range variables {
-		varDecls = append(varDecls, decls.NewVar(variable, decls.NewMapType(decls.String, decls.Dyn)))
-	}
-	d := cel.Declarations(varDecls...)
-	env, err := cel.NewEnv(d)
-	if err != nil {
-		return nil, err
-	}
-
-	// compile and check for errs
-	ast, iss := env.Compile(expr)
-	if iss.Err() != nil {
-		return nil, iss.Err()
-	}
-
-	prog, err := env.Program(ast)
-	if err != nil {
-		return nil, err
-	}
-	log.Print("compiled program OK")
-	return prog, nil
-}
-
 // aggregatedEvents applies left join semantics to select and filter data
 func aggregateEvents(store *eventStore) (interface{}, error) {
 	store.RLock()
@@ -283,7 +243,7 @@ func aggregateEvents(store *eventStore) (interface{}, error) {
 			}
 			if shouldCollect {
 				data, err := collectData(eventA, eventB, dataProg)
-				if err !=  nil {
+				if err != nil {
 					return nil, err
 				}
 				bucket = append(bucket, data)
@@ -294,12 +254,12 @@ func aggregateEvents(store *eventStore) (interface{}, error) {
 	return bucket, nil
 }
 
-func collectData(eventA, eventB *common.TopicEvent, prog cel.Program) (interface{},error) {
+func collectData(eventA, eventB *common.TopicEvent, prog cel.Program) (interface{}, error) {
 	dataMap := map[string]interface{}{
 		eventA.Topic: eventA.Data,
 		eventB.Topic: eventB.Data,
 	}
-	if prog  != nil {
+	if prog != nil {
 		result, _, err := prog.Eval(dataMap)
 		if err != nil {
 			return nil, err

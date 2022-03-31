@@ -1,6 +1,6 @@
 # message-gen
 
-This component can be used to generate and send messages to dapr-specified pub/sub topic.
+A component used to generate and send fake messages to a specified pub/sub topic used for testing.
 
 ## Usage
 
@@ -26,14 +26,21 @@ spec:
     spec:
       containers:
         - name: message-gen
-          image: ghcr.io/vladimirvivien/streaming-runtime-examples/hello-streaming/message-gen:latest
+          image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
           imagePullPolicy: Always
           env:
+          - name: MESSAGE_COUNT # optional count value
+            value: "200"
+          - name: MESSAGE_EXPR # required: CEL expression for message
+            value: ''{"id": id, "greeting":"hello", "location":"world", "timestamp":timestamp}''
           - name: CLUSTER_STREAM
             value: "redis-stream"
           - name: STREAM_TOPIC
             value: "hello-topic-stream"
 ```
+The followings are pre-generated dynamic values available to be used in the message expression:
+* `id` an incremental counter value 
+* `timestamp` a time value generated for each message sent
 
 ## Build and publish
 

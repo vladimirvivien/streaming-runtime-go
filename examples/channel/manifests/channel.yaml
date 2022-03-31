@@ -1,0 +1,13 @@
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Channel
+metadata:
+  name: greetings-channel
+  namespace: default
+spec:
+  servicePort: 8080
+  serviceRoute: greetings
+  select:
+    data: "string(hello.message.id) + '~' + hello.message.text"
+    where: "int(hello.message['id']) > 5 && goodbye.message.id >= 5.0"
+
+  target: message-proc/messages

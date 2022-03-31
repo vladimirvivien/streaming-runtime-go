@@ -18,9 +18,12 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -72,7 +75,7 @@ func (r *ProcessorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			"ServicePort", proc.Spec.ServicePort,
 		)
 
-		deployment, err = r.createProcessorDeployment(proc)
+		deployment, err = r.createProcessorDeployment(ctx, proc)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -112,4 +115,61 @@ func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&streamingruntime.Processor{}).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
+}
+
+func (r *ProcessorReconciler) createProcessorDeployment(_ context.Context, proc *streamingruntime.Processor) (*appsv1.Deployment, error) {
+	replicas := proc.Spec.Replicas
+	if replicas == 0 {
+		replicas = 1
+	}
+
+	// add port info
+	proc.Spec.Container.Ports = append(proc.Spec.Container.Ports, corev1.ContainerPort{
+		Name:          "app-port",
+		HostPort:      0,
+		ContainerPort: proc.Spec.ServicePort,
+	})
+
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      proc.Name,
+			Namespace: proc.Namespace,
+			Labels:    map[string]string{"app": proc.Name},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": proc.Name},
+			},
+			Replicas: &replicas,
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": proc.Name},
+					Annotations: map[string]string{
+						"dapr.io/enabled":  "true",
+						"dapr.io/app-id":   proc.Name,
+						"dapr.io/app-port": fmt.Sprintf("%d", proc.Spec.ServicePort),
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{proc.Spec.Container},
+				},
+			},
+		},
+	}
+
+	// establish ownership
+	if err := ctrl.SetControllerReference(proc, deployment, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return deployment, nil
+}
+
+func (r *ProcessorReconciler) updateProcessorDeployment(proc *streamingruntime.Processor, dep *appsv1.Deployment) {
+	replicas := proc.Spec.Replicas
+	if replicas == 0 {
+		replicas = 1
+	}
+	dep.Spec.Replicas = &replicas
+	dep.Spec.Template.Spec.Containers = []corev1.Container{proc.Spec.Container}
 }

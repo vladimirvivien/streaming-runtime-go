@@ -6,20 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
-  name: joiners.streaming.vivien.io
+  name: channels.streaming.vivien.io
 spec:
   group: streaming.vivien.io
   names:
-    kind: Joiner
-    listKind: JoinerList
-    plural: joiners
-    singular: joiner
+    kind: Channel
+    listKind: ChannelList
+    plural: channels
+    singular: channel
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Joiner is the Schema for the joiners API
+        description: Channel is the Schema for the channels API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,7 +34,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: JoinerSpec defines the desired state of Joiner
+            description: ChannelSpec defines the desired state of Channel
             properties:
               container:
                 description: A single application container that you want to run within
@@ -1180,22 +1180,19 @@ spec:
               servicePort:
                 format: int32
                 type: integer
-              streams:
-                items:
-                  type: string
-                type: array
+              serviceRoute:
+                type: string
               target:
                 type: string
               window:
                 type: string
             required:
             - servicePort
-            - streams
             - target
             - window
             type: object
           status:
-            description: JoinerStatus defines the observed state of Joiner
+            description: ChannelStatus defines the observed state of Channel
             type: object
         type: object
     served: true
