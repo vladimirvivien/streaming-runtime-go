@@ -26,6 +26,10 @@ type ProcessorSpec struct {
 	Replicas    int32            `json:"replicas"`
 	ServicePort int32            `json:"servicePort"`
 	Container   corev1.Container `json:"container"`
+	// +optional
+	ServiceRoute string `json:"serviceRoute"`
+	// +optional
+	Target string `json:"target"`
 }
 
 // ProcessorStatus defines the observed state of Processor

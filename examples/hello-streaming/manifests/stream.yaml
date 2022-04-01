@@ -1,0 +1,11 @@
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Stream
+metadata:
+  name: hello-topic-stream
+  namespace: default
+spec:
+  clusterStream: "redis-stream"
+  topic: "hello-topic-stream"
+  route: "/messages"
+  recipients:
+    - message-proc

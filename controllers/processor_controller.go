@@ -123,6 +123,17 @@ func (r *ProcessorReconciler) createProcessorDeployment(_ context.Context, proc 
 		replicas = 1
 	}
 
+	// collect environment vars
+	serviceRoute := proc.Spec.ServiceRoute
+	if serviceRoute == "" {
+		serviceRoute = proc.Name
+	}
+	proc.Spec.Container.Env = append(proc.Spec.Container.Env,
+		corev1.EnvVar{Name: "PROC_SERVICE_PORT", Value: fmt.Sprintf(":%d", proc.Spec.ServicePort)},
+		corev1.EnvVar{Name: "PROC_SERVICE_ROUTE", Value: serviceRoute},
+		corev1.EnvVar{Name: "PROC_TARGET", Value: validateTarget(proc.Spec.Target)},
+	)
+
 	// add port info
 	proc.Spec.Container.Ports = append(proc.Spec.Container.Ports, corev1.ContainerPort{
 		Name:          "app-port",

@@ -5,16 +5,30 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/dapr/go-sdk/service/common"
 	daprd "github.com/dapr/go-sdk/service/http"
 )
 
+var (
+	servicePort = os.Getenv("PROC_SERVICE_PORT")
+	serviceRoute = os.Getenv("PROC_SERVICE_ROUTE")
+)
+
 func main() {
-	svc := daprd.NewService(":8080")
+	if servicePort == "" {
+		servicePort = ":8080"
+	}
+	if serviceRoute == "" {
+		serviceRoute = os.Getenv("APP_ID")
+	}
+
+	svc := daprd.NewService(servicePort)
+
 
 	// exposes endpoint to receive message events
-	if err := svc.AddServiceInvocationHandler("/messages", messageHandler); err != nil {
+	if err := svc.AddServiceInvocationHandler(serviceRoute, messageHandler); err != nil {
 		log.Fatalf("Failed to add orders handler: %s", err)
 	}
 
@@ -30,7 +44,7 @@ func messageHandler(ctx context.Context, in *common.InvocationEvent) (out *commo
 	if in == nil {
 		return nil, fmt.Errorf("invocation parameter required")
 	}
-	log.Printf("/messages invoked: [content-type: %s, url: %s?%s, data: %s", in.ContentType, in.DataTypeURL, in.QueryString , string(in.Data))
+	log.Printf("%s invoked: [content-type: %s, url: %s?%s, data: %s", servicePort, in.ContentType, in.DataTypeURL, in.QueryString , string(in.Data))
 	return &common.Content{
 		Data:        in.Data,
 		ContentType: in.ContentType,

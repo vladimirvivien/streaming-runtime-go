@@ -1,6 +1,7 @@
 # message-gen
 
-A component used to generate and send fake messages to a specified pub/sub topic used for testing.
+This code uses the Dapr API to connect to (an already established pub/sub) topic and publish a stream of generated
+events.  The code uses `MESSAGE_EXPR` to define a JSON value containing generated message.
 
 ## Usage
 
@@ -38,7 +39,7 @@ spec:
           - name: STREAM_TOPIC
             value: "hello-topic-stream"
 ```
-The followings are pre-generated dynamic values available to be used in the message expression:
+The source code also provides pre-generated dynamic values that are made available to be injected in the message expression:
 * `id` an incremental counter value 
 * `timestamp` a time value generated for each message sent
 
