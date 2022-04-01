@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -15,7 +15,9 @@ import (
 	"github.com/dapr/go-sdk/service/common"
 	daprd "github.com/dapr/go-sdk/service/http"
 	"github.com/google/cel-go/cel"
+	commontypes "github.com/google/cel-go/common/types/ref"
 	"github.com/vladimirvivien/streaming-runtime/components/support"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type eventStore struct {
@@ -173,7 +175,7 @@ func startInputLoop(ctx context.Context, window *time.Ticker, input chan *common
 					log.Printf("joiner: failed to aggregate events: %s", err)
 					continue
 				}
-				jsonData, err := json.Marshal(events)
+				jsonData, err := events.MarshalJSON()
 				if err != nil {
 					log.Println("joiner: failed to marshal json data")
 					continue
@@ -228,7 +230,7 @@ func getSubscription(streamInfo string) (*common.Subscription, error) {
 }
 
 // aggregatedEvents applies left join semantics to select and filter data
-func aggregateEvents(store *eventStore) (interface{}, error) {
+func aggregateEvents(store *eventStore) (*structpb.ListValue, error) {
 	store.RLock()
 	defer store.RUnlock()
 
@@ -236,25 +238,29 @@ func aggregateEvents(store *eventStore) (interface{}, error) {
 	topicA, topicB := topics[0], topics[1]
 	for _, eventA := range store.streams[topicA] {
 		for _, eventB := range store.streams[topicB] {
-			// TODO 1) apply filter expression 2) if ok, apply join expression 3) send to output
+			// 1) apply filter expression 2) if ok, apply data join expression 3) send to output
 			shouldCollect, err := shouldCollect(eventA, eventB, filterProg)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to determine to collect: %s", err)
 			}
 			if shouldCollect {
 				data, err := collectData(eventA, eventB, dataProg)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to collect: %s", err)
 				}
-				bucket = append(bucket, data)
+				bucket = append(bucket, data.AsMap())
 			}
 		}
 	}
 
-	return bucket, nil
+	list, err := structpb.NewList(bucket)
+	if err != nil {
+		return nil, fmt.Errorf("aggregation bucket failed	: %s", err)
+	}
+	return list, nil
 }
 
-func collectData(eventA, eventB *common.TopicEvent, prog cel.Program) (interface{}, error) {
+func collectData(eventA, eventB *common.TopicEvent, prog cel.Program) (*structpb.Struct, error) {
 	dataMap := map[string]interface{}{
 		eventA.Topic: eventA.Data,
 		eventB.Topic: eventB.Data,
@@ -264,9 +270,18 @@ func collectData(eventA, eventB *common.TopicEvent, prog cel.Program) (interface
 		if err != nil {
 			return nil, err
 		}
-		return result.Value(), nil
+		conv, err := result.ConvertToNative(reflect.TypeOf(&structpb.Struct{}))
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert to native: %s", err)
+		}
+		return conv.(*structpb.Struct), nil
 	}
-	return dataMap, nil
+
+	result, err := structpb.NewStruct(dataMap)
+	if err != nil {
+		return nil, fmt.Errorf("new structpb Value failed: %s", err)
+	}
+	return result, nil
 }
 
 func shouldCollect(eventA, eventB *common.TopicEvent, prog cel.Program) (bool, error) {
@@ -289,12 +304,14 @@ func shouldCollect(eventA, eventB *common.TopicEvent, prog cel.Program) (bool, e
 	}
 }
 
-func logStore(store *eventStore) {
-	store.RLock()
-	defer store.RUnlock()
-	for _, topic := range topics {
-		for _, event := range store.streams[topic] {
-			log.Printf("joiner: stored event: {id: %s : {topic: %s; data: %s}}\n", event.ID, event.Topic, string(event.RawData))
-		}
+func marshalJSON(value commontypes.Val) ([]byte, error) {
+	conv, err := value.ConvertToNative(reflect.TypeOf(&structpb.Value{}))
+	if err != nil {
+		return nil, err
 	}
+	jsonData, err := conv.(*structpb.Value).MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return jsonData, nil
 }

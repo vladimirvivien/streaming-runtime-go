@@ -9,7 +9,7 @@ spec:
   - goodbye
   window: 14s
   select:
-    data: "string(hello.message.id) + '~' + hello.message.text"
-    where: "int(hello.message['id']) > 5 && goodbye.message.id >= 5.0"
+    data: '{"hello": hello, "goodbye":goodbye}'
+    where: "int(hello['id']) == 5 && goodbye.id == 5.0"
   servicePort: 8080
   target: message-proc/messages
