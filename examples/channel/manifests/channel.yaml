@@ -6,8 +6,7 @@ metadata:
 spec:
   servicePort: 8080
   serviceRoute: greetings
-  select:
-    data: "string(hello.message.id) + '~' + hello.message.text"
-    where: "int(hello.message['id']) > 5 && goodbye.message.id >= 5.0"
-
-  target: message-proc/messages
+#  select:
+#    data: "string(hello.message.id) + '~' + hello.message.text"
+#    where: "int(hello.message['id']) > 5 && goodbye.message.id >= 5.0"
+  target: message-proc/greetings

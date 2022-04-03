@@ -1,0 +1,13 @@
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Processor
+metadata:
+  name: message-proc
+  namespace: default
+spec:
+  replicas: 1
+  servicePort: 8080
+  serviceRoute: greetings
+  container:
+    name: message-proc
+    image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-proc:latest
+    imagePullPolicy: Always

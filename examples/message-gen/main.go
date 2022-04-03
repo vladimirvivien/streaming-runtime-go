@@ -80,7 +80,8 @@ func main() {
 		if err := client.PublishEvent(ctx, pubsubName, topicName, json, dapr.PublishEventWithContentType("application/json")); err != nil {
 			log.Fatalf("message-gen: fail to publish event: %s", err)
 		}
-		time.Sleep(time.Second * 7)
+		log.Printf("message-gen: message sent: %s", string(json))
+		time.Sleep(time.Second * 5)
 	}
 }
 

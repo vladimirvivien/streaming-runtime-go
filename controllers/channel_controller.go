@@ -152,9 +152,19 @@ func (r *ChannelReconciler) createChanDeployment(ctx context.Context, channel *s
 		serviceRoute = channel.Name
 	}
 
+	mode := channel.Spec.Mode
+	if mode == "" || (mode != "stream" && mode != "aggregate") {
+		mode = "stream"
+	}
+	if mode == "aggregate" && channel.Spec.Trigger == "" {
+		return nil, fmt.Errorf("channel missing aggregate trigger expression")
+	}
+
 	container.Env = []corev1.EnvVar{
 		{Name: "CHANNEL_SERVICE_PORT", Value: fmt.Sprintf(":%d", channel.Spec.ServicePort)},
-		{Name: "CHANNEL_SERVICE_ROUTE", Value: fmt.Sprintf("/%s", serviceRoute)},
+		{Name: "CHANNEL_SERVICE_ROUTE", Value: serviceRoute},
+		{Name: "CHANNEL_MODE", Value: mode},
+		{Name: "CHANNEL_AGGREGATE_TRIGGER", Value: channel.Spec.Trigger},
 		{Name: "CHANNEL_TARGET", Value: validateTarget(channel.Spec.Target)},
 	}
 

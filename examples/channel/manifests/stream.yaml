@@ -1,11 +1,11 @@
 apiVersion: streaming.vivien.io/v1alpha1
 kind: Stream
 metadata:
-  name: hello
+  name: greetings
   namespace: default
 spec:
   clusterStream: "redis-stream"
-  topic: "messages"
+  topic: "greetings"
   route: "/greetings"
   recipients:
-    - message-chan
+    - greetings-channel

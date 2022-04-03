@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-gen
+  labels:
+    app: message-gen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-gen
+  template:
+    metadata:
+      labels:
+        app: message-gen
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "message-gen"
+    spec:
+      containers:
+        - name: message-gen
+          image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
+          imagePullPolicy: Always
+          env:
+            - name: MESSAGE_EXPR # required: CEL expression for message
+              value: '{"id": id, "greeting":"hello", "location":"world", "timestamp":timestamp}'
+            - name: CLUSTER_STREAM
+              value: "redis-stream"
+            - name: STREAM_TOPIC
+              value: "greetings"
