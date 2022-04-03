@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -38,13 +37,18 @@ func main() {
 		servicePort = ":8080"
 	}
 	if serviceRoute == "" {
-		serviceRoute = os.Getenv("APP_ID")
+		serviceRoute = support.SanitizeIdentifier(os.Getenv("APP_ID"))
+	}
+	if modeEnv == "" {
+		modeEnv = "stream"
 	}
 	if targetEnv == "" {
 		log.Fatalf("channel: env CHANNEL_TARGET not provided")
 	}
-	log.Printf("channel: service-port: %s [route=%s], filterExpr: (%s), dataExpr: (%s) ==> target: %s",
-		servicePort, serviceRoute, filterExprEnv, dataExprEnv, targetEnv)
+
+	log.Printf("channel: service-port: %s [route=%s], filterExpr: (%s), dataExpr: (%s), mode: %s ==> target: %s",
+		servicePort, serviceRoute, filterExprEnv, dataExprEnv, modeEnv, targetEnv)
+
 	// setup internal channels for data processing
 	inputChan = make(chan *common.InvocationEvent, 1024)
 	outputChan = make(chan []byte, 1024)
@@ -72,14 +76,14 @@ func main() {
 	// setup common expression lang (cel) programs
 	// for data selection and data filtering
 	if filterExprEnv != "" {
-		prog, err := support.CompileCELProg(filterExprEnv, "event")
+		prog, err := support.CompileCELProg(filterExprEnv, serviceRoute)
 		if err != nil {
 			log.Fatalf("channel: filter expression: %s", err)
 		}
 		filterProg = prog
 	}
 	if dataExprEnv != "" {
-		prog, err := support.CompileCELProg(dataExprEnv, "event")
+		prog, err := support.CompileCELProg(dataExprEnv, serviceRoute)
 		if err != nil {
 			log.Fatalf("channel: data selection expression: %s", err)
 		}
@@ -102,6 +106,7 @@ func main() {
 }
 
 func invocationHandler(ctx context.Context, e *common.InvocationEvent) (out *common.Content, err error) {
+	log.Printf("event received: content-type: %s, content-url: %s, qury: %s data(%s) ", e.ContentType, e.DataTypeURL, e.QueryString, string(e.Data))
 	inputChan <- e
 	return &common.Content{
 		Data:        e.Data,
@@ -125,12 +130,8 @@ func startProcessingLoop(ctx context.Context, input chan *common.InvocationEvent
 					if err != nil {
 						log.Printf("channel: event collection: %s", err)
 					}
-					jsonData, err := event.MarshalJSON()
-					if err != nil {
-						log.Printf("channel: event marshaling: %s", err)
-						continue
-					}
-					output <- jsonData
+
+					output <- event
 				}
 			case <-ctx.Done():
 				log.Println("channel: input channel shutdown")
@@ -170,49 +171,54 @@ func startOutputLoop(ctx context.Context, client dapr.Client, output chan []byte
 // event should be collected for downstream propagation
 func shouldCollect(event *common.InvocationEvent, prog cel.Program) (bool, error) {
 	if prog != nil {
-		dataMap := map[string]interface{}{
-			"event": event,
+		jsonData, err := support.ExtractJSONFromInvocation(event)
+		if err != nil {
+			return false, fmt.Errorf("filter expression: marshal data: %s", err)
 		}
+		dataMap := map[string]interface{}{
+			serviceRoute: jsonData,
+		}
+
 		filterResult, _, err := prog.Eval(dataMap)
 		if err != nil {
-			return false, fmt.Errorf("select filter expression: %s", err)
+			return false, fmt.Errorf("filter expression: evaluation:%s", err)
 		}
 		if filterResult.Type().TypeName() != "bool" {
-			return false, fmt.Errorf("select filter expression: must return a boolean")
+			return false, fmt.Errorf("filter expression: must return a boolean")
 		}
 		shouldCollect := filterResult.Value().(bool)
 		return shouldCollect, nil
 	} else {
-		fmt.Println("channel: should collect = true (default)")
 		return true, nil // always collect if no program provided.
 	}
 }
 
 // collectData applies data collection expression (if any) and returns
 // the collected event (original or synthetic) for downstream propagation.
-func collectData(event *common.InvocationEvent, prog cel.Program) (*structpb.Struct, error) {
-	dataMap := map[string]interface{}{
-		"event": event,
-	}
-
+func collectData(event *common.InvocationEvent, prog cel.Program) ([]byte, error) {
 	if prog != nil {
+		data, err := support.ExtractJSONFromInvocation(event)
+		if err != nil {
+			return nil, fmt.Errorf("data collection: marshal data: %s", err)
+		}
+		dataMap := map[string]interface{}{
+			serviceRoute: data,
+		}
+
 		result, _, err := prog.Eval(dataMap)
 		if err != nil {
-			return nil, fmt.Errorf("collection filter expression: %s", err)
+			return nil, fmt.Errorf("data collection: failed to evaluate filter expression: %s", err)
 		}
 		conv, err := result.ConvertToNative(reflect.TypeOf(&structpb.Struct{}))
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert to native: %s", err)
+			return nil, fmt.Errorf("data collection: failed to convert to native: %s", err)
 		}
-		return conv.(*structpb.Struct), nil
+		jsonData, err := conv.(*structpb.Struct).MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("data collection: failed marshal to JSON: %s", err)
+		}
+		return jsonData, nil
 	}
-	var jsonData map[string]interface{}
-	if err := json.Unmarshal(event.Data, &jsonData); err != nil{
-		return nil, fmt.Errorf("filter expression: %s", err)
-	}
-	result, err := structpb.NewStruct(jsonData)
-	if err != nil {
-		return nil, fmt.Errorf("filter expression: new struct failed: %s", err)
-	}
-	return result, nil
+
+	return event.Data, nil
 }
