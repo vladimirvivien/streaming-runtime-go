@@ -23,8 +23,17 @@ spec:
           imagePullPolicy: Always
           env:
             - name: MESSAGE_EXPR # required: CEL expression for message
-              value: '{"id": id, "greeting":"hello", "location":"world", "timestamp":timestamp}'
+              value: |
+                {"id": id, "greeting":"Hello World", "language":"en", "timestamp":timestamp}
+#                [
+#                  {"id": 1, "greeting":"Hello World", "language":"en", "timestamp":timestamp},
+#                  {"id": 2, "greeting":"Salut Monde", "language":"fr", "timestamp":timestamp},
+#                  {"id": 3, "greeting":"नमस्ते दुनिया", "language":"In", "timestamp":timestamp},
+#                  {"id": 4, "greeting":"Привет мир", "language":"Ru", "timestamp":timestamp},
+#                ]
             - name: CLUSTER_STREAM
               value: "redis-stream"
             - name: STREAM_TOPIC
               value: "hello-topic-stream"
+            - name: MESSAGE_COUNT
+              value: "4"

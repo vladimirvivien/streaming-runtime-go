@@ -7,7 +7,6 @@ import (
 
 	"github.com/dapr/go-sdk/service/common"
 	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/checker/decls"
 	exprv1alpha1 "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 )
 
@@ -55,12 +54,8 @@ func ExtractJSONFromInvocation(e *common.InvocationEvent)(map[string]interface{}
 	return nil, fmt.Errorf("unsupported event type: %s", e.ContentType)
 }
 
-func CompileCELProg(expr string, variables ...string) (cel.Program, error) {
-	var varDecls []*exprv1alpha1.Decl
-	for _, variable := range variables {
-		varDecls = append(varDecls, decls.NewVar(variable, decls.NewMapType(decls.String, decls.Dyn)))
-	}
-	d := cel.Declarations(varDecls...)
+func CompileCELProg(expr string, variables ...*exprv1alpha1.Decl) (cel.Program, error) {
+	d := cel.Declarations(variables...)
 	env, err := cel.NewEnv(d)
 	if err != nil {
 		return nil, err

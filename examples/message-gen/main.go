@@ -22,6 +22,7 @@ var (
 	pubsubName      = os.Getenv("CLUSTER_STREAM")
 	topicName       = os.Getenv("STREAM_TOPIC")
 	messageExpr     = os.Getenv("MESSAGE_EXPR")
+	messageDelayEnv = os.Getenv("MESSAGE_DELAY")
 
 	messageCount = 0
 )
@@ -33,8 +34,7 @@ func main() {
 	}
 
 	if messageCountEnv != "" {
-		count, err := strconv.Atoi(messageCountEnv)
-		if err != nil {
+		if count, err := strconv.Atoi(messageCountEnv); err == nil{
 			messageCount = count
 		}
 	}
@@ -51,6 +51,15 @@ func main() {
 		log.Fatal("message expression must be provided")
 	}
 
+	if messageDelayEnv == "" {
+		messageDelayEnv = "3s"
+	}
+	delay, err := time.ParseDuration(messageDelayEnv)
+	if err != nil {
+		log.Printf("message-gen: invalid delay value: %s, default to 3s", err)
+		delay = time.Second * 3
+	}
+
 	log.Printf("message-gen: client created: clusterStream: %s, topic: %s, message-expr: %s", pubsubName, topicName, messageExpr)
 
 	prog, err := compileCELProg(messageExpr, map[string]*exprv1alpha1.Type{"timestamp": decls.String, "id": decls.Int})
@@ -65,7 +74,7 @@ func main() {
 		messageCount = math.MaxInt
 	}
 
-	for n := 0; n < messageCount; n++ {
+	for n := 0; n <= messageCount; n++ {
 		val, _, err := prog.Eval(map[string]interface{}{
 			"timestamp": time.Now().String(),
 			"id":   n + 1,
@@ -73,16 +82,38 @@ func main() {
 		if err != nil {
 			log.Fatalf("messasge-gen: fail to evaluate message expression: %s", err)
 		}
-		json, err := marshalJSON(val)
-		if err != nil {
-			log.Fatalf("message-gen: fail to convert to JSON: %s", err)
+		switch val.Type().TypeName(){
+		default:
+			json, err := marshalJSON(val)
+			if err != nil {
+				log.Fatalf("message-gen: fail to convert to JSON: %s", err)
+			}
+			if err := client.PublishEvent(ctx, pubsubName, topicName, json, dapr.PublishEventWithContentType("application/json")); err != nil {
+				log.Fatalf("message-gen: fail to publish event: %s", err)
+			}
+			log.Printf("message-gen: message sent: %s", string(json))
+			time.Sleep(delay)
+		case "list":
+			list, ok := val.Value().([]commontypes.Val)
+			if !ok {
+				log.Fatalf("message-gen: unexpected list type: %T", val.Value())
+			}
+			for _, l := range list {
+				json, err := marshalJSON(l)
+				if err != nil {
+					log.Fatalf("message-gen: fail to convert to JSON: %s", err)
+				}
+				if err := client.PublishEvent(ctx, pubsubName, topicName, json, dapr.PublishEventWithContentType("application/json")); err != nil {
+					log.Fatalf("message-gen: fail to publish event: %s", err)
+				}
+				log.Printf("message-gen: message sent: %s", string(json))
+				time.Sleep(delay)
+				n++
+			}
 		}
-		if err := client.PublishEvent(ctx, pubsubName, topicName, json, dapr.PublishEventWithContentType("application/json")); err != nil {
-			log.Fatalf("message-gen: fail to publish event: %s", err)
-		}
-		log.Printf("message-gen: message sent: %s", string(json))
-		time.Sleep(time.Second * 5)
 	}
+	log.Printf("message-gen: message count reached: %d",messageCount)
+	select {} // stay alive to avoid pod restart
 }
 
 func compileCELProg(expr string, variables map[string]*exprv1alpha1.Type) (cel.Program, error) {

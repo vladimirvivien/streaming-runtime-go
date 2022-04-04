@@ -15,8 +15,10 @@ import (
 	"github.com/dapr/go-sdk/service/common"
 	daprd "github.com/dapr/go-sdk/service/http"
 	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/checker/decls"
 	commontypes "github.com/google/cel-go/common/types/ref"
 	"github.com/vladimirvivien/streaming-runtime/components/support"
+	exprv1alpha1 "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -115,17 +117,24 @@ func main() {
 		}
 	}
 
+	// CEL program variables
+	variables := []*exprv1alpha1.Decl{
+		decls.NewVar(topics[0], decls.NewMapType(decls.String, decls.Dyn)),
+		decls.NewVar(topics[1], decls.NewMapType(decls.String, decls.Dyn)),
+	}
+
 	// setup common expression lang (cel) programs
 	// for data selection and data filtering
 	if filterExprEnv != "" {
-		prog, err := support.CompileCELProg(filterExprEnv, topics...)
+
+		prog, err := support.CompileCELProg(filterExprEnv, variables...)
 		if err != nil {
 			log.Fatalf("joiner: filter expression: %s", err)
 		}
 		filterProg = prog
 	}
 	if dataExprEnv != "" {
-		prog, err := support.CompileCELProg(dataExprEnv, topics...)
+		prog, err := support.CompileCELProg(dataExprEnv, variables...)
 		if err != nil {
 			log.Fatalf("joiner: data selection expression: %s", err)
 		}
