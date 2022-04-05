@@ -5,10 +5,8 @@ This example demonstrates the use of the `Channel` component:
 * Supports data filter and data selection expressions
 * Able to send data to another stream or another component
 
-## Components
-This example uses several [streaming-runtime components](./manifests) as outlined below.
-
 ## Pre-requisites
+
 Before you can run this example, you must have the following *pre-requisites*:
 
 * Your cluster has the `dapr` runtime components deployed
@@ -16,16 +14,19 @@ Before you can run this example, you must have the following *pre-requisites*:
 * A Redis Streams and RabbitMQ brokers
 
 ### Pre-install RabbitMQ
+
 This example uses RabbitMQ to receive processed streamed messages. Use the Helm chart for RabbitMQ for a quick deployment - https://github.com/bitnami/charts/tree/master/bitnami/rabbitmq.
 Follow instruction, from Helm chart installation output, to get the namespace, username, password, and the server port.
 Then, configure the ClusterStream accordingly. Set the `host` to match the name of the Rabbit Kubernetes service and
 its namespace (i.e. `<rabbitmq-service-name>.<namespace>.svc.cluster.local:<port>`)
 
-## Installation
+## Install and run
+
 For this simple example, the following steps will install the components necessary to generate and stream events using
 Redis that are then processed by a simple component.
 
 ### Install Dapr
+
 This implementation of the Streaming-Runtime uses on Dapr and its API. You must install the Dapr components on your cluster prior
 to running the example.
 
@@ -40,10 +41,11 @@ running the following `kubectl` command:
 kubectl apply -f https://github.com/vladimirvivien/streaming-runtime-go/blob/main/config/streaming-components.yaml
 ```
 
-## Running the example
+### Running the example
+
 At this point, you are ready to run the example components.
 
-### Deploy the components
+#### Deploy the components
 
 The following command will deploy all components to run the example on the cluster:
 
@@ -54,7 +56,8 @@ kubectl apply -f https://github.com/vladimirvivien/streaming-runtime-go/blob/mai
 > NOTE: While this example uses Redis Streams and RabbitMQ, you can use any of your favorite brokers including Kafka, NATS, etc., [supported by Dapr](https://docs.dapr.io/reference/components-reference/supported-pubsub/)
 for streaming.
 
-### Validate deployment
+#### Validate deployment
+
 Validate that the expected components are deployed and are running OK.
 First, get a list of running pods in the `default` namespace:
 
@@ -69,13 +72,18 @@ redis-6cc59df87c-wf9sv               1/1     Running   0              121m
 ```
 
 If everything is working OK, you should be able to see all messages sent to the RabbitMQ queue forwarded to the message-proc component:
+
 ```
 kubectl logs -l app=message-proc -c message-proc
 2022/04/05 17:35:49 :8080 invoked: [content-type: application/cloudevents+json, url: ?, data: {"datacontenttype":"application/json","traceid":"00-0afc6c7fc14595e5ffcfce367262492b-7c3b52a67a2f3ad8-00","tracestate":"","data":{"newgreeting":"hello world!"},"id":"e4c3ea8e-f0d0-48f6-8b98-44f0c555bbd6","specversion":"1.0","source":"greetings-channel","type":"com.dapr.event.sent","topic":"greetings-sink","pubsubname":"rabbit-stream"}
 2022/04/05 17:36:04 :8080 invoked: [content-type: application/cloudevents+json, url: ?, data: {"specversion":"1.0","topic":"greetings-sink","traceid":"00-857cb6f6cebf144964f16e8e5e506c15-4afa2cd2ab1f21e9-00","type":"com.dapr.event.sent","pubsubname":"rabbit-stream","tracestate":"","data":{"newgreeting":"hello world!"},"id":"710f0cfa-ba84-41a2-a899-497c9e6a28d1","datacontenttype":"application/json","source":"greetings-channel"}
 ```
 
-## Example artifacts
+## Components
+This example uses several [streaming-runtime components](./manifests) as shown in the illustration below.
+
+![Components](channel-example.png "Components")
+
 
 ### Redis streaming
 This example uses Redis Stream from which events are streamed before they are processed. See [redis.yaml](./manifests/redis.yaml).
@@ -197,7 +205,7 @@ spec:
   servicePort: 8080
   serviceRoute: greetings
   select:
-    data: '{"newgreeting": greetings.greeting + " " + greetings.location + "!"}'
+    data: '{"new-greeting": greetings.greeting + " " + greetings.location + "!"}'
     where: "int(greetings['id']) % 5 == 0"
   target:
     stream: rabbit-stream/greetings-sink
