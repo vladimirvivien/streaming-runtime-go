@@ -1,6 +1,4 @@
 # This deployment creates a simple redis streams cluster.
-# For this example, component syslog-gen will generate the fake system log
-# and send them to the redis stream.
 apiVersion: v1
 kind: Service
 metadata:

@@ -10,7 +10,8 @@ spec:
     data: |
       {"ts": syslog.timestamp, "message":syslog.message}
     where: |
-      syslog.process.startsWith('sshd')
-        && syslog.message.startsWith('authentication failure')
-        && syslog.message.contains('user=root')
-  target: syslog-proc/syslog
+      syslog.process.startsWith("sshd")
+        && syslog.message.startsWith("authentication failure")
+        && syslog.message.contains("user=root")
+  target:
+    component: syslog-proc/syslog

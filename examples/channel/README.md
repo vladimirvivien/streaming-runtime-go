@@ -85,7 +85,7 @@ This example uses several [streaming-runtime components](./manifests) as shown i
 ![Components](channel-example.png "Components")
 
 
-### Redis streaming
+### Redis Streams deployment
 This example uses Redis Stream from which events are streamed before they are processed. See [redis.yaml](./manifests/redis.yaml).
 
 > The following YAML deploys a single-pod instance of Redis stream for simplicity. You can use an operator or
@@ -115,7 +115,7 @@ spec:
 ### Redis `ClusterStream`
 This `ClusterStream` component configures the connection to Redis Stream as a pub/sub broker. See [redis.yaml](./manifests/redis.yaml).
 
-> Note that this component expects the broker to be already be deployed and accessible ahead of time.
+> Note that this component expects the broker to be deployed and accessible ahead of time.
 
 ```yaml
 apiVersion: streaming.vivien.io/v1alpha1
@@ -147,6 +147,8 @@ spec:
   recipients:
     - greetings-channel
 ```
+
+> Note that the `greetings` Stream component targets the `greetings-channel` Channel component as its recipient (see further below).
 
 ### RabbitMQ `ClusterStream`
 This `ClusterStream` component configures a connection to the RabbitMQ broker. See [redis.yaml](./manifests/rabbit.yaml).
@@ -211,7 +213,7 @@ spec:
     stream: rabbit-stream/greetings-sink
 ```
 
-### Them message `Processor`
+### The message `Processor`
 Component `message-proc` deploys a simple [Go application](../message-proc) that logs (standard output) messages that
 are sent to the RabbitMQ queue.
 
@@ -240,14 +242,14 @@ that are sent to Redis stream. See [message-gen.yaml](./manifests/message-gen.ya
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello-message-gen
+  name: message-gen
 spec:
   replicas: 1
   template:
     metadata:
       annotations:
         dapr.io/enabled: "true"
-        dapr.io/app-id: "hello-message-gen"
+        dapr.io/app-id: "message-gen"
     spec:
       containers:
         - name: message-gen
@@ -255,34 +257,10 @@ spec:
           imagePullPolicy: Always
           env:
             - name: MESSAGE_EXPR # required: CEL expression for message
-              value: '{"id": id, "greeting":"hello World!!", "timestamp":timestamp, "side":"hello"}'
+              value: '{"id": id, "greeting":"hello", "location":"world", "timestamp":timestamp}'
             - name: CLUSTER_STREAM
               value: "redis-stream"
             - name: STREAM_TOPIC
-              value: "hello"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: goodbye-message-gen
-spec:
-  replicas: 1
-  template:
-    metadata:
-      annotations:
-        dapr.io/enabled: "true"
-        dapr.io/app-id: "goodbye-message-gen"
-    spec:
-      containers:
-        - name: message-gen
-          image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
-          imagePullPolicy: Always
-          env:
-            - name: MESSAGE_EXPR # required: CEL expression for message
-              value: '{"id": id, "greeting":"hello World!!", "timestamp":timestamp, "side":"goodbye"}'
-            - name: CLUSTER_STREAM
-              value: "redis-stream"
-            - name: STREAM_TOPIC
-              value: "goodbye"
+              value: "greetings"
 ```
 

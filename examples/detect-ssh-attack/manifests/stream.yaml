@@ -1,4 +1,4 @@
-# ClusterStream creates a pub/sub connection to the streaming system (Redis stream)
+# ClusterStream creates a pub/sub connection to the streaming system (Redis Streams)
 apiVersion: streaming.vivien.io/v1alpha1
 kind: ClusterStream
 metadata:
