@@ -3,7 +3,7 @@
 This example demonstrates the use of the `Joiner` component to stream and join events from two separate streams of events.
 
 ## Components
-This example uses several [streaming-runtime components](../../components) as outlined below.
+This example uses several [streaming-runtime components](./manifests) as outlined below.
 
 ### Redis streaming
 This example uses Redis streaming as pub/sub broker to stream and drain incoming events. See [redis.yaml](./manifests/redis.yaml).
