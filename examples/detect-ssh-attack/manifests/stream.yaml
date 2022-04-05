@@ -1,0 +1,24 @@
+# ClusterStream creates a pub/sub connection to the streaming system (Redis stream)
+apiVersion: streaming.vivien.io/v1alpha1
+kind: ClusterStream
+metadata:
+  name: syslog-stream
+  namespace: default
+spec:
+  protocol: redis
+  properties:
+    redisHost: redis:6379
+    redisPassword: ""
+---
+# Stream creates a subscription to a topic so that components can stream data in/out
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Stream
+metadata:
+  name: greetings
+  namespace: default
+spec:
+  clusterStream: "syslog-stream"
+  topic: "syslog"
+  route: "/syslog"
+  recipients:
+    - syslog-channel

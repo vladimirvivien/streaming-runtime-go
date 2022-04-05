@@ -1,0 +1,63 @@
+# system log generator
+# Simulates fake system log entries that are streamed to a streaming system.
+# In a real application, that data would be streamed from a streaming platform,
+# such as Kafka, Redis, etc., connected to a log aggregator.
+# Example inspired by https://developer.confluent.io/tutorials/SSH-attack/confluent.html
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: syslog-gen
+  labels:
+    app: syslog-gen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: syslog-gen
+  template:
+    metadata:
+      labels:
+        app: syslog-gen
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "syslog-gen"
+    spec:
+      containers:
+        - name: syslog-gen
+          image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
+          imagePullPolicy: Always
+          env:
+            - name: MESSAGE_EXPR # required: expression to generate messages
+              value: |
+                [
+                  {"timestamp":"Jun 14 15:16:01", "process":"sshd(pam_unix)[19939]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=218.188.2.4 "},
+                  {"timestamp":"Jun 14 15:16:02", "process":"sshd(pam_unix)[19937]", "message":"check pass; user unknown"},
+                  {"timestamp":"Jun 14 15:16:02", "process":"sshd(pam_unix)[19937]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=218.188.2.4 "},
+                  {"timestamp":"Jun 15 02:04:59", "process":"sshd(pam_unix)[20882]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220-135-151-1.hinet-ip.hinet.net  user=root"},
+                  {"timestamp":"Jun 15 02:04:59", "process":"sshd(pam_unix)[20884]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220-135-151-1.hinet-ip.hinet.net  user=root"},
+                  {"timestamp":"Jun 15 02:04:59", "process":"sshd(pam_unix)[20883]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220-135-151-1.hinet-ip.hinet.net  user=root"},
+                  {"timestamp":"Jun 15 02:04:59", "process":"sshd(pam_unix)[20885]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220-135-151-1.hinet-ip.hinet.net  user=root"},
+                  {"timestamp":"Jun 15 04:06:18", "process":"su(pam_unix)[21416]", "message":"session opened for user cyrus by (uid=0)"},
+                  {"timestamp":"Jun 15 04:06:19", "process":"su(pam_unix)[21416]", "message":"session closed for user cyrus"},
+                  {"timestamp":"Jun 16 04:16:17", "process":"su(pam_unix)[25548]", "message":"session opened for user news by (uid=0)"},
+                  {"timestamp":"Jun 16 04:16:18", "process":"su(pam_unix)[25548]", "message":"session closed for user news"},
+                  {"timestamp":"Jun 17 04:03:33", "process":"su(pam_unix)[27953]", "message":"session opened for user cyrus by (uid=0)"},
+                  {"timestamp":"Jun 17 04:03:34", "process":"su(pam_unix)[27953]", "message":"session closed for user cyrus"},
+                  {"timestamp":"Jun 17 07:07:00", "process":"ftpd[29504]", "message":"connection from 24.54.76.216 (24-54-76-216.bflony.adelphia.net) "},
+                  {"timestamp":"Jun 17 07:07:00", "process":"ftpd[29508]", "message":"connection from 24.54.76.216 (24-54-76-216.bflony.adelphia.net)"},
+                  {"timestamp":"Jun 17 07:07:00", "process":"ftpd[29507]", "message":"connection from 24.54.76.216 (24-54-76-216.bflony.adelphia.net)"},
+                  {"timestamp":"Jun 21 08:56:36", "process":"sshd(pam_unix)[14281]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=217.60.212.66  user=guest"},
+                  {"timestamp":"Jun 21 08:56:36", "process":"sshd(pam_unix)[14279]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=217.60.212.66  user=guest"},
+                  {"timestamp":"Jun 21 08:56:36", "process":"sshd(pam_unix)[14282]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=217.60.212.66  user=guest"},
+                  {"timestamp":"Jun 21 08:56:36", "process":"sshd(pam_unix)[14277]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=217.60.212.66  user=guest"},
+                  {"timestamp":"Jun 21 08:56:36", "process":"sshd(pam_unix)[14278]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=217.60.212.66  user=guest"},
+                  {"timestamp":"Jun 21 08:56:36", "process":"sshd(pam_unix)[14280]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=217.60.212.66  user=guest"},
+                  {"timestamp":"Jun 22 03:17:26", "process":"sshd(pam_unix)[16207]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=n219076184117.netvigator.com  user=root"},
+                  {"timestamp":"Jun 22 03:17:26", "process":"sshd(pam_unix)[16206]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=n219076184117.netvigator.com  user=root"},
+                  {"timestamp":"Jun 22 03:17:35", "process":"sshd(pam_unix)[16210]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=n219076184117.netvigator.com  user=root"},
+                  {"timestamp":"Jun 22 03:17:36", "process":"sshd(pam_unix)[16212]", "message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=n219076184117.netvigator.com  user=root"}
+                ]
+            - name: CLUSTER_STREAM
+              value: "syslog-stream"
+            - name: STREAM_TOPIC
+              value: "syslog"

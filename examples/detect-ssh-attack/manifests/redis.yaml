@@ -1,0 +1,36 @@
+# This deployment creates a simple redis streams cluster.
+# For this example, component syslog-gen will generate the fake system log
+# and send them to the redis stream.
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: default
+  labels:
+    app: redis
+spec:
+  ports:
+    - port: 6379
+      name: redis
+      targetPort: 6379
+  selector:
+    app: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:6.2.6-alpine

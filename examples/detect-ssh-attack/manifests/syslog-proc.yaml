@@ -1,0 +1,13 @@
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Processor
+metadata:
+  name: syslog-proc
+  namespace: default
+spec:
+  replicas: 1
+  servicePort: 8080
+  serviceRoute: syslog
+  container:
+    name: syslog-proc
+    image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-proc:latest
+    imagePullPolicy: Always

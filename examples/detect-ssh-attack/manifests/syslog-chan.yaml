@@ -1,0 +1,16 @@
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Channel
+metadata:
+  name: syslog-channel
+  namespace: default
+spec:
+  servicePort: 8080
+  serviceRoute: syslog
+  select:
+    data: |
+      {"ts": syslog.timestamp, "message":syslog.message}
+    where: |
+      syslog.process.startsWith('sshd')
+        && syslog.message.startsWith('authentication failure')
+        && syslog.message.contains('user=root')
+  target: syslog-proc/syslog
