@@ -1,8 +1,13 @@
-# Detect SSH login attempts
+# Detect SSH login attacks
 
 This example demonstrates the use of the `Channel` component to stream (mocked) system log events to detect failed ssh login attempts by root.
 This example is inspired by [SSH-attack](https://developer.confluent.io/tutorials/SSH-attack/confluent.html) example from
 Confluent (however, for simplicity sake, it streams from Redis instead of Kafka).
+
+## Components
+This example uses several [streaming-runtime components](./manifests) as shown in the illustration below.
+
+![Components](ssh-attack-components.png "Components")
 
 ## Pre-requisites
 
@@ -73,10 +78,7 @@ kubectl logs -l app=syslog-proc -c syslog-proc
 2022/04/05 21:39:40 :8080 invoked: [content-type: application/json, url: ?, data: {"message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=n219076184117.netvigator.com  user=root", "ts":"Jun 22 03:17:26"}
 ```
 
-## Components
-This example uses several [streaming-runtime components](./manifests) as shown in the illustration below.
-
-![Components](ssh-attack-components.png "Components")
+## Manifest artifacts
 
 ### Redis Streams deployment
 This example uses Redis Streams to receive and stream system log events before they are processed. See [redis.yaml](./manifests/redis.yaml).
@@ -232,6 +234,5 @@ spec:
               value: "syslog-stream"
             - name: STREAM_TOPIC
               value: "syslog"
-
 ```
 

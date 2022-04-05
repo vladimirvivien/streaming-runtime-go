@@ -5,6 +5,12 @@ This example demonstrates the use of the `Channel` component:
 * Supports data filter and data selection expressions
 * Able to send data to another stream or another component
 
+## Components
+This example uses several [streaming-runtime components](./manifests) as shown in the illustration below.
+
+![Components](channel-example.png "Components")
+
+
 ## Pre-requisites
 
 Before you can run this example, you must have the following *pre-requisites*:
@@ -79,11 +85,7 @@ kubectl logs -l app=message-proc -c message-proc
 2022/04/05 17:36:04 :8080 invoked: [content-type: application/cloudevents+json, url: ?, data: {"specversion":"1.0","topic":"greetings-sink","traceid":"00-857cb6f6cebf144964f16e8e5e506c15-4afa2cd2ab1f21e9-00","type":"com.dapr.event.sent","pubsubname":"rabbit-stream","tracestate":"","data":{"newgreeting":"hello world!"},"id":"710f0cfa-ba84-41a2-a899-497c9e6a28d1","datacontenttype":"application/json","source":"greetings-channel"}
 ```
 
-## Components
-This example uses several [streaming-runtime components](./manifests) as shown in the illustration below.
-
-![Components](channel-example.png "Components")
-
+## Manifest artifacts
 
 ### Redis Streams deployment
 This example uses Redis Stream from which events are streamed before they are processed. See [redis.yaml](./manifests/redis.yaml).
