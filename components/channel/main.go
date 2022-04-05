@@ -18,15 +18,15 @@ import (
 )
 
 var (
-	servicePort    = os.Getenv("CHANNEL_SERVICE_PORT")             // service port
-	serviceRoute   = os.Getenv("CHANNEL_SERVICE_ROUTE")            // service path
-	modeEnv        = os.Getenv("CHANNEL_MODE")                     // channel mode, valid values = {stream | aggregate}
-	triggerExprEnv = os.Getenv("CHANNEL_AGGREGATE_TRIGGER")        // expression to trigger aggregation
-	filterExprEnv  = os.Getenv("CHANNEL_SELECT_FILTER_EXPRESSION") // expression used to filter data from stream
-	dataExprEnv    = os.Getenv("CHANNEL_SELECT_DATA_EXPRESSION")   // expression used to generate data output from streams
-	targetEnv      = os.Getenv("CHANNEL_TARGET")                   // component[/path] to route result
-
-	counter = 0
+	servicePort        = os.Getenv("CHANNEL_SERVICE_PORT")             // service port
+	serviceRoute       = os.Getenv("CHANNEL_SERVICE_ROUTE")            // service path
+	modeEnv            = os.Getenv("CHANNEL_MODE")                     // channel mode, valid values = {stream | aggregate}
+	triggerExprEnv     = os.Getenv("CHANNEL_AGGREGATE_TRIGGER")        // expression to trigger aggregation
+	filterExprEnv      = os.Getenv("CHANNEL_SELECT_FILTER_EXPRESSION") // expression used to filter data from stream
+	dataExprEnv        = os.Getenv("CHANNEL_SELECT_DATA_EXPRESSION")   // expression used to generate data output from streams
+	targetStreamEnv    = os.Getenv("CHANNEL_TARGET_STREAM")            // "pubsub/topic" path where to route result
+	targetComponentEnv = os.Getenv("CHANNEL_TARGET_COMPONENT")         // "component/route" path where to send result
+	counter            = 0
 
 	inputChan  chan *common.InvocationEvent
 	outputChan chan []byte
@@ -46,12 +46,12 @@ func main() {
 	if modeEnv == "" {
 		modeEnv = "stream"
 	}
-	if targetEnv == "" {
-		log.Fatalf("channel: env CHANNEL_TARGET not provided")
+	if targetStreamEnv == "" && targetComponentEnv == "" {
+		log.Fatalf("channel: env CHANNEL_TARGET_STREAM and/or CHANNEL_TARGET_COMPONENT must be provided")
 	}
 
-	log.Printf("channel: service-port: %s [route=%s], filterExpr: (%s), dataExpr: (%s), mode: %s ==> target: %s",
-		servicePort, serviceRoute, filterExprEnv, dataExprEnv, modeEnv, targetEnv)
+	log.Printf("channel: service-port: %s [route=%s], filterExpr: (%s), dataExpr: (%s), mode: %s ==> target: stream(%s) component(%s)",
+		servicePort, serviceRoute, filterExprEnv, dataExprEnv, modeEnv, targetStreamEnv, targetComponentEnv)
 
 	// setup internal channels for data processing
 	inputChan = make(chan *common.InvocationEvent, 1024)
@@ -66,9 +66,13 @@ func main() {
 	}
 	defer client.Close()
 
-	targetParts, err := support.GetTargetParts(targetEnv)
+	targetStreamParts, err := support.GetTargetParts(targetStreamEnv)
 	if err != nil {
-		log.Fatalf("channel: target: %s", err)
+		log.Fatalf("channel: stream target: %s", err)
+	}
+	targetComponentParts, err := support.GetTargetParts(targetComponentEnv)
+	if err != nil {
+		log.Fatalf("channel: component target: %s", err)
 	}
 
 	// start service
@@ -109,7 +113,7 @@ func main() {
 	if err := startProcessingLoop(ctx, inputChan, outputChan); err != nil {
 		log.Fatalf("channel: input loop: %s", err)
 	}
-	if err := startOutputLoop(ctx, client, outputChan, targetParts); err != nil {
+	if err := startOutputLoop(ctx, client, outputChan, targetStreamParts, targetComponentParts); err != nil {
 		log.Fatalf("channel: ouptut loop: %s", err)
 	}
 
@@ -159,26 +163,37 @@ func startProcessingLoop(ctx context.Context, input chan *common.InvocationEvent
 	return nil
 }
 
-func startOutputLoop(ctx context.Context, client dapr.Client, output chan []byte, targetParts []string) error {
+func startOutputLoop(ctx context.Context, client dapr.Client, output chan []byte, targetStreamParts, targetComponentParts []string) error {
 	go func() {
 		for {
 			select {
 			case data := <-output:
-				content := &dapr.DataContent{
-					Data:        data,
-					ContentType: "application/json",
-				}
-				appId, route := targetParts[0], targetParts[1]
 				shouldTrigger, err := shouldTrigger(triggerProg)
 				if err != nil {
 					log.Printf("channel: should trigger: %s", err)
 					continue
 				}
 				if shouldTrigger {
-					if _, err := client.InvokeMethodWithContent(ctx, appId, route, http.MethodPost, content); err != nil {
-						log.Printf("channel: invoking target service: %s", err)
-					} else {
-						log.Printf("channel: output data: %s", string(content.Data))
+					if len(targetStreamParts) > 0 {
+						pubsub, topic := targetStreamParts[0], targetStreamParts[1]
+						if err := client.PublishEvent(ctx, pubsub, topic, data, dapr.PublishEventWithContentType("application/json")); err != nil {
+							log.Printf("channel: target pubsub/stream: %s", err)
+						} else {
+							log.Printf("channel: target pubsub/stream: output: %s", string(data))
+						}
+					}
+
+					if len(targetComponentParts) > 0 {
+						content := &dapr.DataContent{
+							Data:        data,
+							ContentType: "application/json",
+						}
+						componentId, route := targetComponentParts[0], targetComponentParts[1]
+						if _, err := client.InvokeMethodWithContent(ctx, componentId, route, http.MethodPost, content); err != nil {
+							log.Printf("channel: target component service: %s", err)
+						} else {
+							log.Printf("channel: target component service: output: %s", string(content.Data))
+						}
 					}
 				}
 			case <-ctx.Done():

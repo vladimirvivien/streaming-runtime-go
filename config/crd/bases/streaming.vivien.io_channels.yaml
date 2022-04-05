@@ -1185,7 +1185,12 @@ spec:
               serviceRoute:
                 type: string
               target:
-                type: string
+                properties:
+                  component:
+                    type: string
+                  stream:
+                    type: string
+                type: object
               trigger:
                 type: string
             required:

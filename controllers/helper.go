@@ -16,6 +16,9 @@ func getMetadataStringValues(keyName string, properties map[string]string) (resu
 
 // validateTarget returns component/route if ok, or component/component if route is missing.
 func validateTarget(target string) string {
+	if target == "" {
+		return target
+	}
 	if strings.Index(target, "/") == -1 {
 		return fmt.Sprintf("%s/%s", target, target)
 	}

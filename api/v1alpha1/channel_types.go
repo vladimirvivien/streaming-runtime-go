@@ -23,8 +23,8 @@ import (
 
 // ChannelSpec defines the desired state of Channel
 type ChannelSpec struct {
-	ServicePort int32  `json:"servicePort"`
-	Target      string `json:"target"`
+	ServicePort int32        `json:"servicePort"`
+	Target      OutputTarget `json:"target"`
 	// +optional
 	Mode string `json:"mode"` // mode = {stream|aggregate}
 	// +optional

@@ -143,8 +143,8 @@ func (r *ChannelReconciler) createChanDeployment(ctx context.Context, channel *s
 	})
 
 	// validate and set env data
-	if channel.Spec.Target == "" {
-		return nil, fmt.Errorf("channel missing valid target")
+	if channel.Spec.Target.Stream == "" && channel.Spec.Target.Component == "" {
+		return nil, fmt.Errorf("channel must target a pubsub stream or a component")
 	}
 
 	serviceRoute := channel.Spec.ServiceRoute
@@ -165,7 +165,8 @@ func (r *ChannelReconciler) createChanDeployment(ctx context.Context, channel *s
 		{Name: "CHANNEL_SERVICE_ROUTE", Value: serviceRoute},
 		{Name: "CHANNEL_MODE", Value: mode},
 		{Name: "CHANNEL_AGGREGATE_TRIGGER", Value: channel.Spec.Trigger},
-		{Name: "CHANNEL_TARGET", Value: validateTarget(channel.Spec.Target)},
+		{Name: "CHANNEL_TARGET_STREAM", Value: validateTarget(channel.Spec.Target.Stream)},
+		{Name: "CHANNEL_TARGET_COMPONENT", Value: validateTarget(channel.Spec.Target.Component)},
 	}
 
 	// Setup data selection

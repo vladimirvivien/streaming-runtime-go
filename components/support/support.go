@@ -11,6 +11,9 @@ import (
 )
 
 func GetTargetParts(target string) ([]string, error) {
+	if target == "" {
+		return []string{}, nil
+	}
 	parts := strings.Split(target, "/")
 	switch {
 	case len(parts) > 1:
@@ -32,7 +35,7 @@ func UnmarshalJSON(data []byte) (map[string]interface{}, error) {
 	return result, nil
 }
 
-func ExtractJSONFromInvocation(e *common.InvocationEvent)(map[string]interface{}, error) {
+func ExtractJSONFromInvocation(e *common.InvocationEvent) (map[string]interface{}, error) {
 	switch {
 	case e.ContentType == "application/json":
 		return UnmarshalJSON(e.Data)
@@ -42,12 +45,12 @@ func ExtractJSONFromInvocation(e *common.InvocationEvent)(map[string]interface{}
 			return nil, err
 		}
 		data, ok := cloudevent["data"]
-		if !ok{
-			fmt.Errorf("cloudevent missing 'data' entry")
+		if !ok {
+			return nil, fmt.Errorf("cloudevent missing 'data' entry")
 		}
 		jsonData, ok := data.(map[string]interface{})
 		if !ok {
-			fmt.Errorf("cloudevent data has unexpected type: %T", data)
+			return nil, fmt.Errorf("cloudevent data has unexpected type: %T", data)
 		}
 		return jsonData, nil
 	}

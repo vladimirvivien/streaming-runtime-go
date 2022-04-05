@@ -4,8 +4,20 @@ metadata:
   name: greetings
   namespace: default
 spec:
-  clusterStream: "redis-stream"
-  topic: "greetings"
-  route: "/greetings"
+  clusterStream: redis-stream
+  topic: greetings
+  route: /greetings
   recipients:
     - greetings-channel
+---
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Stream
+metadata:
+  name: greetings-sink
+  namespace: default
+spec:
+  clusterStream: rabbit-stream
+  topic: greetings-sink
+  route: /greetings-sink
+  recipients:
+    - message-proc

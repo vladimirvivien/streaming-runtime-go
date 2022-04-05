@@ -7,3 +7,10 @@ type DataSelection struct {
 	// +optional
 	Where string `json:"where"`
 }
+
+type OutputTarget struct {
+	// +optional
+	Stream string `json:"stream"`
+	// +optional
+	Component string `json:"component"`
+}

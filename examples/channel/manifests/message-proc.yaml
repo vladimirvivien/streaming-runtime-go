@@ -6,7 +6,7 @@ metadata:
 spec:
   replicas: 1
   servicePort: 8080
-  serviceRoute: greetings
+  serviceRoute: greetings-sink
   container:
     name: message-proc
     image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-proc:latest

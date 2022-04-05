@@ -9,4 +9,5 @@ spec:
   select:
     data: '{"newgreeting": greetings.greeting + " " + greetings.location + "!"}'
     where: "int(greetings['id']) % 5 == 0"
-  target: message-proc/greetings
+  target:
+    stream: rabbit-stream/greetings-sink
