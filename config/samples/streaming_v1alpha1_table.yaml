@@ -1,0 +1,6 @@
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Table
+metadata:
+  name: table-sample
+spec:
+  # TODO(user): Add fields here

@@ -1,0 +1,46 @@
+# Single-node redis deployment
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: default
+  labels:
+    app: redis
+spec:
+  ports:
+    - port: 6379
+      name: redis
+      targetPort: 6379
+  selector:
+    app: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:6.2.6-alpine
+---
+# ClusterStream to create connection to Redis
+apiVersion: streaming.vivien.io/v1alpha1
+kind: ClusterStream
+metadata:
+  name: redis-stream
+  namespace: default
+spec:
+  protocol: redis
+  properties:
+    redisHost: redis:6379
+    redisPassword: ""

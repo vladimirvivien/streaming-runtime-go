@@ -1,0 +1,19 @@
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Stream
+metadata:
+  name: tenants
+  namespace: default
+spec:
+  clusterStream: redis-stream
+  topic: tenants
+  route: /tenants
+---
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Stream
+metadata:
+  name: power_readings
+  namespace: default
+spec:
+  clusterStream: rabbit-stream
+  topic: power_readings
+  route: /power_readings

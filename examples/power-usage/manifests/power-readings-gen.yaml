@@ -1,0 +1,42 @@
+# power reading generator
+# Sends mock power reading data to the power_readings topic
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: syslog-gen
+  labels:
+    app: syslog-gen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: syslog-gen
+  template:
+    metadata:
+      labels:
+        app: syslog-gen
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "tenants-gen"
+    spec:
+      containers:
+        - name: syslog-gen
+          image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
+          imagePullPolicy: Always
+          env:
+            - name: MESSAGE_EXPR # required: expression to generate messages
+              value: |
+                [
+                  {"panel_id": 1, "tenant_id": "dc:eqix:us:chi1:12", "power_use": 1.05, "kwh_use": 1034},
+                  {"panel_id": 2, "tenant_id": "dc:eqix:us:chi1:10", "power_use": 0.85, "kwh_use": 867},
+                  {"panel_id": 1, "tenant_id": "dc:kddi:eu:ber1:15", "power_use": 0.54, "kwh_use": 345},
+                  {"panel_id": 2, "tenant_id": "dc:kddi:eu:ber1:20", "power_use": 0.67, "kwh_use": 288},
+                  {"panel_id": 1, "tenant_id": "dc:kddi:cn:hnk2:11", "power_use": 1.11, "kwh_use": 1119},
+                  {"panel_id": 1, "tenant_id": "dc:eqix:us:chi1:12", "power_use": 1.01, "kwh_use": 1134},
+                  {"panel_id": 2, "tenant_id": "dc:eqix:us:chi1:10", "power_use": 0.75, "kwh_use": 898},
+                  {"panel_id": 1, "tenant_id": "dc:kddi:cn:hnk2:11", "power_use": 1.10, "kwh_use": 1201},
+                ]
+            - name: CLUSTER_STREAM
+              value: "redis-stream"
+            - name: STREAM_TOPIC
+              value: "power_readings"

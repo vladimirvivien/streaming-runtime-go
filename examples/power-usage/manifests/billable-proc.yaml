@@ -1,0 +1,14 @@
+# This processor receives tenants billable data and prints them
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Processor
+metadata:
+  name: billable-proc
+  namespace: default
+spec:
+  replicas: 1
+  servicePort: 8080
+  serviceRoute: billables
+  container:
+    name: message-proc
+    image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-proc:latest
+    imagePullPolicy: Always

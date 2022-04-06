@@ -1,0 +1,18 @@
+# NOTE: this component expects rabbitmq to have already been deployed on cluster
+# Use Helm chart for RabbitMQ for quick deployment - https://github.com/bitnami/charts/tree/master/bitnami/rabbitmq.
+# Follow instruction, from Helm chart output, to get namespace, username, password, and server port.
+# Then, configure the ClusterStream accordingly. Set the `host` to match the name of the Rabbit Kubernetes service and
+# its namespace (i.e. <rabbitmq-service-name>.<namespace>.svc.cluster.local:<port>)
+
+# ClusterStream to create a pubsub for rabbitmq
+apiVersion: streaming.vivien.io/v1alpha1
+kind: ClusterStream
+metadata:
+  name: rabbit-stream
+  namespace: default
+spec:
+  protocol: rabbitmq
+  properties:
+    host: amqp://user:PfobN4Ttfq@rabbitmq.default.svc.cluster.local:5672
+    deliveryMode: "2"
+    durable: "true"

@@ -1,0 +1,39 @@
+# tenants generator
+# Sends tenant data to the tenants topic
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: syslog-gen
+  labels:
+    app: syslog-gen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: syslog-gen
+  template:
+    metadata:
+      labels:
+        app: syslog-gen
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "tenants-gen"
+    spec:
+      containers:
+        - name: syslog-gen
+          image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
+          imagePullPolicy: Always
+          env:
+            - name: MESSAGE_EXPR # required: expression to generate messages
+              value: |
+                [
+                  {"tenant_id":"dc:eqix:us:chi1:12", customer_id: 924},
+                  {"tenant_id":"dc:eqix:us:chi1:10", customer_id: 243},
+                  {"tenant_id":"dc:kddi:eu:ber1:15", customer_id: 924},
+                  {"tenant_id":"dc:kddi:eu:ber1:20", customer_id: 123},
+                  {"tenant_id":"dc:kddi:cn:hnk2:11", customer_id: 243},
+                ]
+            - name: CLUSTER_STREAM
+              value: "redis-stream"
+            - name: STREAM_TOPIC
+              value: "tenants"
