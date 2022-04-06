@@ -52,11 +52,11 @@ func main() {
 	}
 
 	if messageDelayEnv == "" {
-		messageDelayEnv = "3s"
+		messageDelayEnv = "1s"
 	}
 	delay, err := time.ParseDuration(messageDelayEnv)
 	if err != nil {
-		log.Printf("message-gen: invalid delay value: %s, default to 3s", err)
+		log.Printf("message-gen: invalid delay value: %s, default to 1s", err)
 		delay = time.Second * 3
 	}
 

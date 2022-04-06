@@ -39,7 +39,7 @@ You will need to install the Streaming-Runtime controller components before you 
 running the following `kubectl` command:
 
 ```
-kubectl apply -f https://github.com/vladimirvivien/streaming-runtime-go/blob/main/config/streaming-components.yaml
+kubectl apply -f https://raw.githubusercontent.com/vladimirvivien/streaming-runtime-go/main/config/streaming-components.yaml
 ```
 
 ### Running the example

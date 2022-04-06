@@ -44,7 +44,7 @@ func messageHandler(ctx context.Context, in *common.InvocationEvent) (out *commo
 	if in == nil {
 		return nil, fmt.Errorf("invocation parameter required")
 	}
-	log.Printf("%s invoked: [content-type: %s, url: %s?%s, data: %s", servicePort, in.ContentType, in.DataTypeURL, in.QueryString , string(in.Data))
+	log.Printf("Data received: %s", string(in.Data))
 	return &common.Content{
 		Data:        in.Data,
 		ContentType: in.ContentType,

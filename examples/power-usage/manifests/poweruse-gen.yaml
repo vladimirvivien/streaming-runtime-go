@@ -3,24 +3,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: syslog-gen
+  name: poweruse-gen
   labels:
-    app: syslog-gen
+    app: poweruse-gen
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: syslog-gen
+      app: poweruse-gen
   template:
     metadata:
       labels:
-        app: syslog-gen
+        app: poweruse-gen
       annotations:
         dapr.io/enabled: "true"
-        dapr.io/app-id: "tenants-gen"
+        dapr.io/app-id: "poweruse-gen"
     spec:
       containers:
-        - name: syslog-gen
+        - name: poweruse-gen
           image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
           imagePullPolicy: Always
           env:
@@ -37,6 +37,6 @@ spec:
                   {"panel_id": 1, "tenant_id": "dc:kddi:cn:hnk2:11", "power_use": 1.10, "kwh_use": 1201},
                 ]
             - name: CLUSTER_STREAM
-              value: "redis-stream"
+              value: "rabbit-stream"
             - name: STREAM_TOPIC
-              value: "power_readings"
+              value: "poweruse"

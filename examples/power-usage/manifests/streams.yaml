@@ -11,9 +11,9 @@ spec:
 apiVersion: streaming.vivien.io/v1alpha1
 kind: Stream
 metadata:
-  name: power_readings
+  name: poweruse
   namespace: default
 spec:
   clusterStream: rabbit-stream
-  topic: power_readings
-  route: /power_readings
+  topic: poweruse
+  route: /poweruse

@@ -9,6 +9,6 @@ spec:
   servicePort: 8080
   serviceRoute: billables
   container:
-    name: message-proc
+    name: billable-proc
     image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-proc:latest
     imagePullPolicy: Always

@@ -32,6 +32,8 @@ spec:
           env:
           - name: MESSAGE_COUNT # optional count value
             value: "200"
+          - name: MESSAGE_DELAY # optional: delay between each message sent
+            value: "1s"
           - name: MESSAGE_EXPR # required: CEL expression for message
             value: ''{"id": id, "greeting":"hello", "location":"world", "timestamp":timestamp}''
           - name: CLUSTER_STREAM

@@ -176,6 +176,7 @@ func startInputLoop(ctx context.Context, window *time.Ticker, input chan *common
 			select {
 			case e := <-input: // store stream while window is opened
 				store.Lock()
+				log.Printf("joiner: received data: topic=%s, data=%v", e.Topic, e.Data)
 				store.streams[e.Topic] = append(store.streams[e.Topic], e)
 				store.Unlock()
 			case <-window.C: // aggregate stream, when window closes
@@ -211,13 +212,22 @@ func startOutputLoop(ctx context.Context, client dapr.Client, outChan chan []byt
 		for {
 			select {
 			case data := <-outChan:
+				if len(data) == 0 {
+					log.Print("joiner: data output is zero")
+					continue
+				}
+
 				content := &dapr.DataContent{
 					Data:        data,
 					ContentType: "application/json",
 				}
 				appId, route := targetParts[0], targetParts[1]
-				client.InvokeMethodWithContent(ctx, appId, route, http.MethodPost, content)
-				log.Printf("joiner: output json data: %s", string(content.Data))
+				_, err := client.InvokeMethodWithContent(ctx, appId, route, http.MethodPost, content)
+				if err != nil {
+					log.Printf("joiner: invoke method: %s", err)
+					continue
+				}
+				log.Printf("joiner: sent output data: %s", string(data))
 			case <-ctx.Done():
 				log.Println("joiner: output invoker done!")
 				break
@@ -245,12 +255,15 @@ func aggregateEvents(store *eventStore) (*structpb.ListValue, error) {
 
 	var bucket []interface{}
 	topicA, topicB := topics[0], topics[1]
+	if len(store.streams[topicA]) == 0 || len(store.streams[topicB]) == 0 {
+		return nil, fmt.Errorf("empty stream(s): join will be empty")
+	}
 	for _, eventA := range store.streams[topicA] {
 		for _, eventB := range store.streams[topicB] {
 			// 1) apply filter expression 2) if ok, apply data join expression 3) send to output
 			shouldCollect, err := shouldCollect(eventA, eventB, filterProg)
 			if err != nil {
-				return nil, fmt.Errorf("failed to determine to collect: %s", err)
+				return nil, fmt.Errorf("shouldCollect check failed: %s", err)
 			}
 			if shouldCollect {
 				data, err := collectData(eventA, eventB, dataProg)
@@ -262,9 +275,13 @@ func aggregateEvents(store *eventStore) (*structpb.ListValue, error) {
 		}
 	}
 
+	if len(bucket) == 0{
+		return nil, fmt.Errorf("join result is empty")
+	}
+
 	list, err := structpb.NewList(bucket)
 	if err != nil {
-		return nil, fmt.Errorf("aggregation bucket failed	: %s", err)
+		return nil, fmt.Errorf("aggregation bucket failed : %s", err)
 	}
 	return list, nil
 }
