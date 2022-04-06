@@ -19,13 +19,17 @@ Before you can run this example, you must have the following *pre-requisites*:
 
 ## Install and run
 
-For this simple example, the following steps will install the components necessary to generate and stream events using
-Redis that are then processed by a simple component.
+For this simple example, the following steps will install the components necessary.
 
 ### Install Dapr
 
-This implementation of the Streaming-Runtime uses on Dapr and its API. You must install the Dapr components on your cluster prior
-to running the example.
+This implementation of the Streaming-Runtime project uses Dapr and its API. You must install the Dapr components on your cluster prior
+to running the example. Install the [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/) and run the following
+command to install the Dapr components on the Kubernetes cluster
+
+```
+dapr init -k
+```
 
 > See instructions on [installing Dapr components](https://docs.dapr.io/operations/hosting/kubernetes/kubernetes-deploy/)
 
@@ -78,7 +82,7 @@ kubectl logs -l app=syslog-proc -c syslog-proc
 2022/04/05 21:39:40 :8080 invoked: [content-type: application/json, url: ?, data: {"message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=n219076184117.netvigator.com  user=root", "ts":"Jun 22 03:17:26"}
 ```
 
-## Manifest artifacts
+## Artifacts manifest
 
 ### Redis Streams deployment
 This example uses Redis Streams to receive and stream system log events before they are processed. See [redis.yaml](./manifests/redis.yaml).
@@ -198,7 +202,7 @@ spec:
 ```
 
 ### Syslog generator
-Lastly, the `syslog-gen` application deploys a simple [Go an application](../message-gen) that generates mock system messages
+Lastly, the `syslog-gen` application is a simple [Go an application](../message-gen) that generates mock system messages
 that are sent to Redis Streams. See [message-gen.yaml](./manifests/syslog-gen.yaml).
 
 ```yaml
