@@ -15,13 +15,16 @@ metadata:
   name: hello-goodbye-join
   namespace: default
 spec:
-  streams: # list of stream referenced
+  streams: # list of source streams
     - hello
     - goodbye
-  window: 14s
-  select: # event filter and selection expressions using CEL
+  
+  window: 14s # tumbling window duration for data aggregation
+  
+  select: # data filter and construction expressions using CEL
     data: "string(hello.message.id) + '~' + hello.message.text"
     where: "int(hello.message['id']) > 5 && goodbye.message.id >= 5.0"
+    
   servicePort: 8080
 
   # target: the component[/route] where to send joined messages
