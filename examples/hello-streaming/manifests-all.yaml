@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: redis
+  name: redis
+  namespace: default
+spec:
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+  selector:
+    app: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - image: redis:6.2.6-alpine
+        name: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: message-gen
+  name: message-gen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-gen
+  template:
+    metadata:
+      annotations:
+        dapr.io/app-id: message-gen
+        dapr.io/enabled: "true"
+      labels:
+        app: message-gen
+    spec:
+      containers:
+      - env:
+        - name: MESSAGE_EXPR
+          value: |
+            {"id": id, "greeting":"Hello World", "language":"en", "timestamp":timestamp}
+        - name: CLUSTER_STREAM
+          value: redis-stream
+        - name: STREAM_TOPIC
+          value: hello-topic-stream
+        - name: MESSAGE_COUNT
+          value: "4"
+        image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
+        imagePullPolicy: Always
+        name: message-gen
+---
+apiVersion: streaming.vivien.io/v1alpha1
+kind: ClusterStream
+metadata:
+  name: redis-stream
+  namespace: default
+spec:
+  properties:
+    redisHost: redis:6379
+    redisPassword: ""
+  protocol: redis
+---
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Processor
+metadata:
+  name: message-proc
+  namespace: default
+spec:
+  container:
+    image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-proc:latest
+    imagePullPolicy: Always
+    name: message-proc
+  replicas: 1
+  servicePort: 8080
+  serviceRoute: messages
+---
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Stream
+metadata:
+  name: hello-topic-stream
+  namespace: default
+spec:
+  clusterStream: redis-stream
+  recipients:
+  - message-proc
+  route: /messages
+  topic: hello-topic-stream

@@ -52,7 +52,7 @@ At this point, you are ready to run the example components.
 The following command will deploy all components to run the example on the cluster:
 
 ```
-kubectl apply -f https://github.com/vladimirvivien/streaming-runtime-go/blob/main/examples/hello-streaming/manifests
+kubectl apply -f https://raw.githubusercontent.com/vladimirvivien/streaming-runtime-go/main/examples/hello-streaming/manifests-all.yaml
 ```
 
 > NOTE: While this example uses Redis Streams, you can use any of your favorite brokers, including Kafka, Rabbit, NATS, etc., [supported by Dapr](https://docs.dapr.io/reference/components-reference/supported-pubsub/)
