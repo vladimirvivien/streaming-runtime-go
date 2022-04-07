@@ -17,14 +17,20 @@ Before you can run this example, you must have the following *pre-requisites*:
 
 * Your cluster has the `dapr` runtime components deployed
 * Your cluster also needs to have the `streaming-runtime-go` components deployed
-* A Redis Streams and RabbitMQ brokers
+* Redis Streams and RabbitMQ brokers deployed on the cluster
 
 ### Pre-install RabbitMQ
 
-This example uses RabbitMQ to receive processed streamed messages. Use the Helm chart for RabbitMQ for a quick deployment - https://github.com/bitnami/charts/tree/master/bitnami/rabbitmq.
+This example uses RabbitMQ to receive processed streamed messages. Use the [Helm chart for RabbitMQ](https://github.com/bitnami/charts/tree/master/bitnami/rabbitmq) for a simple single-node deployment.
+
+```
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install rabbitmq --set auth.username=admin,auth.password=@dm1n bitnami/rabbitmq
+```
+
 Follow instruction, from Helm chart installation output, to get the namespace, username, password, and the server port.
-Then, configure the ClusterStream accordingly. Set the `host` to match the name of the Rabbit Kubernetes service and
-its namespace (i.e. `<rabbitmq-service-name>.<namespace>.svc.cluster.local:<port>`)
+That information will be used to configure the `host`, in the `ClusterStream` component (later in the doc), to match the 
+name of the RabbitMQ service and its namespace (i.e. `<rabbitmq-service-name>.<namespace>.svc.cluster.local:<port>`).
 
 ## Install and run
 
@@ -56,10 +62,13 @@ At this point, you are ready to run the example components.
 The following command will deploy all components to run the example on the cluster:
 
 ```
-kubectl apply -f https://github.com/vladimirvivien/streaming-runtime-go/blob/main/examples/channel/manifests
+kubectl apply -f https://raw.githubusercontent.com/vladimirvivien/streaming-runtime-go/main/examples/channel/manifests-all.yaml
 ```
 
-> NOTE: While this example uses Redis Streams and RabbitMQ, you can use any of your favorite brokers including Kafka, NATS, etc., [supported by Dapr](https://docs.dapr.io/reference/components-reference/supported-pubsub/)
+>NOTE: if you use a different username/password for RabbitMQ, download the manifest file above first. Then, update the password
+> the username and password for the `rabbit-stream`  ClusterStream component.
+
+While this example uses Redis Streams and RabbitMQ, you can use any of your favorite brokers including Kafka, NATS, etc., [supported by Dapr](https://docs.dapr.io/reference/components-reference/supported-pubsub/)
 for streaming.
 
 #### Validate deployment
@@ -81,8 +90,9 @@ If everything is working OK, you should be able to see all messages sent to the 
 
 ```
 kubectl logs -l app=message-proc -c message-proc
-2022/04/05 17:35:49 :8080 invoked: [content-type: application/cloudevents+json, url: ?, data: {"datacontenttype":"application/json","traceid":"00-0afc6c7fc14595e5ffcfce367262492b-7c3b52a67a2f3ad8-00","tracestate":"","data":{"newgreeting":"hello world!"},"id":"e4c3ea8e-f0d0-48f6-8b98-44f0c555bbd6","specversion":"1.0","source":"greetings-channel","type":"com.dapr.event.sent","topic":"greetings-sink","pubsubname":"rabbit-stream"}
-2022/04/05 17:36:04 :8080 invoked: [content-type: application/cloudevents+json, url: ?, data: {"specversion":"1.0","topic":"greetings-sink","traceid":"00-857cb6f6cebf144964f16e8e5e506c15-4afa2cd2ab1f21e9-00","type":"com.dapr.event.sent","pubsubname":"rabbit-stream","tracestate":"","data":{"newgreeting":"hello world!"},"id":"710f0cfa-ba84-41a2-a899-497c9e6a28d1","datacontenttype":"application/json","source":"greetings-channel"}
+2022/04/07 15:08:37 Data received: {"datacontenttype":"application/json","topic":"greetings-sink","traceid":"00-da069949597d3faaccd05556e965c417-e0a822901e01455c-00","data":{"newgreeting":"hello world!"},"specversion":"1.0","source":"greetings-channel","type":"com.dapr.event.sent","pubsubname":"rabbit-stream","tracestate":"","id":"18d71db4-9c9b-46c2-b0f6-b40a4e8f8596"}
+2022/04/07 15:08:42 Data received: {"type":"com.dapr.event.sent","pubsubname":"rabbit-stream","data":{"newgreeting":"hello world!"},"id":"2584a78c-dd33-4bb3-b71b-6fab77403027","specversion":"1.0","source":"greetings-channel","tracestate":"","datacontenttype":"application/json","topic":"greetings-sink","traceid":"00-dd136418161114dc65f7dc4aa3b2b73c-7aa835f99293cde5-00"}
+2022/04/07 15:08:47 Data received: {"data":{"newgreeting":"hello world!"},"specversion":"1.0","topic":"greetings-sink","pubsubname":"rabbit-stream","traceid":"00-6d24928d6fda4970fbc3dabdd8412856-14a848620726566f-00","tracestate":"","id":"9733cc11-474d-4aec-8e44-fda0e27d676b","datacontenttype":"application/json","source":"greetings-channel","type":"com.dapr.event.sent"}
 ```
 
 ## Manifest artifacts

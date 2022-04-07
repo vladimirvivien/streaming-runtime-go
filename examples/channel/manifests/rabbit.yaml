@@ -13,6 +13,6 @@ metadata:
 spec:
   protocol: rabbitmq
   properties:
-    host: amqp://user:PfobN4Ttfq@rabbitmq.default.svc.cluster.local:5672
+    host: amqp://admin:@dm1n@rabbitmq.default.svc.cluster.local:5672
     deliveryMode: "2"
     durable: "true"

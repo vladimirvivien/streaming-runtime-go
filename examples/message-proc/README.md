@@ -1,10 +1,10 @@
 # message-proc
 
-This code uses the Dapr API to receive incoming streaming events from a configured streaming topic.  The code can be
-deployed as a [Processor](../../docs/processor-component.md) component which automatically creates the necessary deployment for getting the pod running
-on the cluster.
+This simple Go program is designed to be deployed as a [Processor](../../docs/processor-component.md) component that
+receives streaming events from a specified topic.  When deployed as a processor, it automatically creates the necessary 
+deployment for getting the pod running on the cluster.
 
-Read more about the Processor [here](../../docs/processor-component.md).
+Read more about the Processor component [here](../../docs/processor-component.md).
 
 ## Build and publish
 
