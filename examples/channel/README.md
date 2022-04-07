@@ -70,7 +70,7 @@ The following command will deploy all components to run the example on the clust
 kubectl apply -f https://raw.githubusercontent.com/vladimirvivien/streaming-runtime-go/main/examples/channel/manifests-all.yaml
 ```
 
->NOTE: if you use a different username/password for RabbitMQ, download the manifest file above first. Then, update the password
+>NOTE: if you use a different username/password for RabbitMQ, download the manifest file above first. Then, update 
 > the username and password for the `rabbit-stream`  ClusterStream component.
 
 While this example uses Redis Streams and RabbitMQ, you can use any of your favorite brokers including Kafka, NATS, etc., [supported by Dapr](https://docs.dapr.io/reference/components-reference/supported-pubsub/)
@@ -168,7 +168,7 @@ spec:
 > Note that the `greetings` Stream component targets the `greetings-channel` Channel component as its recipient (see further below).
 
 ### RabbitMQ `ClusterStream`
-This `ClusterStream` component configures a connection to the RabbitMQ broker. See [redis.yaml](./manifests/rabbit.yaml).
+This `ClusterStream` component configures a connection to the RabbitMQ broker. See [rabbit.yaml](./manifests/rabbit.yaml).
 
 > Note that this component expects the broker to be already be deployed and accessible ahead of time.
 

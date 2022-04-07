@@ -1,0 +1,192 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: redis
+  name: redis
+  namespace: default
+spec:
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+  selector:
+    app: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - image: redis:6.2.6-alpine
+        name: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: poweruse-gen
+  name: poweruse-gen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: poweruse-gen
+  template:
+    metadata:
+      annotations:
+        dapr.io/app-id: poweruse-gen
+        dapr.io/enabled: "true"
+      labels:
+        app: poweruse-gen
+    spec:
+      containers:
+      - env:
+        - name: MESSAGE_EXPR
+          value: |
+            [
+              {"panel_id": 1, "tenant_id": "dc:eqix:us:chi1:12", "power_use": 1.05, "kwh_use": 1034},
+              {"panel_id": 2, "tenant_id": "dc:eqix:us:chi1:10", "power_use": 0.85, "kwh_use": 867},
+              {"panel_id": 1, "tenant_id": "dc:kddi:eu:ber1:15", "power_use": 0.54, "kwh_use": 345},
+              {"panel_id": 2, "tenant_id": "dc:kddi:eu:ber1:20", "power_use": 0.67, "kwh_use": 288},
+              {"panel_id": 1, "tenant_id": "dc:kddi:cn:hnk2:11", "power_use": 1.11, "kwh_use": 1119},
+              {"panel_id": 1, "tenant_id": "dc:eqix:us:chi1:12", "power_use": 1.01, "kwh_use": 1134},
+              {"panel_id": 2, "tenant_id": "dc:eqix:us:chi1:10", "power_use": 0.75, "kwh_use": 898},
+              {"panel_id": 1, "tenant_id": "dc:kddi:cn:hnk2:11", "power_use": 1.10, "kwh_use": 1201},
+            ]
+        - name: CLUSTER_STREAM
+          value: rabbit-stream
+        - name: STREAM_TOPIC
+          value: poweruse
+        image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
+        imagePullPolicy: Always
+        name: poweruse-gen
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: tenants-gen
+  name: tenants-gen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tenants-gen
+  template:
+    metadata:
+      annotations:
+        dapr.io/app-id: tenants-gen
+        dapr.io/enabled: "true"
+      labels:
+        app: tenants-gen
+    spec:
+      containers:
+      - env:
+        - name: MESSAGE_EXPR
+          value: |
+            [
+              {"tenant_id":"dc:eqix:us:chi1:12", "customer_id": 924},
+              {"tenant_id":"dc:eqix:us:chi1:10", "customer_id": 243},
+              {"tenant_id":"dc:kddi:eu:ber1:15", "customer_id": 924},
+              {"tenant_id":"dc:kddi:eu:ber1:20", "customer_id": 123},
+              {"tenant_id":"dc:kddi:cn:hnk2:11", "customer_id": 243},
+            ]
+        - name: CLUSTER_STREAM
+          value: redis-stream
+        - name: STREAM_TOPIC
+          value: tenants
+        image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-gen:latest
+        imagePullPolicy: Always
+        name: tenants-gen
+---
+apiVersion: streaming.vivien.io/v1alpha1
+kind: ClusterStream
+metadata:
+  name: rabbit-stream
+  namespace: default
+spec:
+  properties:
+    deliveryMode: "2"
+    durable: "true"
+    host: amqp://admin:@dm1n@rabbitmq.default.svc.cluster.local:5672
+  protocol: rabbitmq
+---
+apiVersion: streaming.vivien.io/v1alpha1
+kind: ClusterStream
+metadata:
+  name: redis-stream
+  namespace: default
+spec:
+  properties:
+    redisHost: redis:6379
+    redisPassword: ""
+  protocol: redis
+---
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Joiner
+metadata:
+  name: join-tenants-poweruse
+  namespace: default
+spec:
+  select:
+    data: |
+      {
+        "customer_id": tenants.customer_id,
+        "tenant_id": tenants.tenant_id,
+        "tenant_kwh_usage": poweruse.kwh_use
+      }
+    where: |
+      tenants.tenant_id == poweruse.tenant_id
+        && poweruse.power_use >= 1.0
+  servicePort: 8080
+  streams:
+  - tenants
+  - poweruse
+  target: billable-proc/billables
+  window: 20s
+---
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Processor
+metadata:
+  name: billable-proc
+  namespace: default
+spec:
+  container:
+    image: ghcr.io/vladimirvivien/streaming-runtime-examples/message-proc:latest
+    imagePullPolicy: Always
+    name: billable-proc
+  replicas: 1
+  servicePort: 8080
+  serviceRoute: billables
+---
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Stream
+metadata:
+  name: poweruse
+  namespace: default
+spec:
+  clusterStream: rabbit-stream
+  route: /poweruse
+  topic: poweruse
+---
+apiVersion: streaming.vivien.io/v1alpha1
+kind: Stream
+metadata:
+  name: tenants
+  namespace: default
+spec:
+  clusterStream: redis-stream
+  route: /tenants
+  topic: tenants
