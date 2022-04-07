@@ -51,7 +51,7 @@ At this point, you are ready to run the example components.
 The following command will deploy all components to run the example on the cluster:
 
 ```
-kubectl apply -f https://github.com/vladimirvivien/streaming-runtime-go/blob/main/examples/detect-ssh-attack/manifests
+kubectl apply -f https://raw.githubusercontent.com/vladimirvivien/streaming-runtime-go/main/examples/detect-ssh-attack/manifests-all.yaml
 ```
 
 > NOTE: While this example uses Redis Streams, you can use any of your favorite brokers including Kafka, RabbitMQ, NATS, etc., [supported by Dapr](https://docs.dapr.io/reference/components-reference/supported-pubsub/)
@@ -76,10 +76,10 @@ in the `syslog-proc` component:
 
 ```
 kubectl logs -l app=syslog-proc -c syslog-proc
-2022/04/05 21:38:46 :8080 invoked: [content-type: application/json, url: ?, data: {"message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220-135-151-1.hinet-ip.hinet.net  user=root", "ts":"Jun 15 02:04:59"}
-2022/04/05 21:38:49 :8080 invoked: [content-type: application/json, url: ?, data: {"message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220-135-151-1.hinet-ip.hinet.net  user=root", "ts":"Jun 15 02:04:59"}
-2022/04/05 21:39:37 :8080 invoked: [content-type: application/json, url: ?, data: {"message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=n219076184117.netvigator.com  user=root", "ts":"Jun 22 03:17:26"}
-2022/04/05 21:39:40 :8080 invoked: [content-type: application/json, url: ?, data: {"message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=n219076184117.netvigator.com  user=root", "ts":"Jun 22 03:17:26"}
+2022/04/07 15:27:58 Data received: {"message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=n219076184117.netvigator.com  user=root", "ts":"Jun 22 03:17:26"}
+2022/04/07 15:27:59 Data received: {"message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=n219076184117.netvigator.com  user=root", "ts":"Jun 22 03:17:26"}
+2022/04/07 15:28:00 Data received: {"message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=n219076184117.netvigator.com  user=root", "ts":"Jun 22 03:17:35"}
+2022/04/07 15:28:01 Data received: {"message":"authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=n219076184117.netvigator.com  user=root", "ts":"Jun 22 03:17:36"}
 ```
 
 ## Artifacts manifest

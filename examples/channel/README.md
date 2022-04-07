@@ -39,8 +39,13 @@ Redis that are then processed by a simple component.
 
 ### Install Dapr
 
-This implementation of the Streaming-Runtime uses on Dapr and its API. You must install the Dapr components on your cluster prior
-to running the example.
+This implementation of the Streaming-Runtime project uses Dapr and its API. You must install the Dapr components on your cluster prior
+to running the example. Install the [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/) and run the following
+command to install the Dapr components on the Kubernetes cluster
+
+```
+dapr init -k
+```
 
 > See instructions on [installing Dapr components](https://docs.dapr.io/operations/hosting/kubernetes/kubernetes-deploy/)
 
