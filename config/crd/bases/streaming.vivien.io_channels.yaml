@@ -1170,32 +1170,39 @@ spec:
                 type: object
               mode:
                 type: string
-              select:
-                description: DataSelection defines data selection expressions to select
-                  and filter out streamed events
-                properties:
-                  data:
-                    type: string
-                  where:
-                    type: string
-                type: object
               servicePort:
                 format: int32
                 type: integer
-              serviceRoute:
-                type: string
-              target:
+              stream:
+                description: StreamSetup defines stream data selection, composition,
+                  filter and output
                 properties:
-                  component:
+                  from:
+                    items:
+                      type: string
+                    type: array
+                  select:
                     type: string
-                  stream:
+                  to:
+                    items:
+                      properties:
+                        component:
+                          type: string
+                        stream:
+                          type: string
+                      type: object
+                    type: array
+                  where:
                     type: string
+                required:
+                - from
+                - to
                 type: object
               trigger:
                 type: string
             required:
             - servicePort
-            - target
+            - stream
             type: object
           status:
             description: ChannelStatus defines the observed state of Channel

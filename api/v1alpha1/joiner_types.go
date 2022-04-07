@@ -28,7 +28,7 @@ type JoinerSpec struct {
 	Window      string   `json:"window"`
 	Target      string   `json:"target"`
 	// +optional
-	Select *DataSelection `json:"select,omitempty"`
+	Select *StreamSetup `json:"select,omitempty"`
 	// +optional
 	Container *corev1.Container `json:"container"`
 }

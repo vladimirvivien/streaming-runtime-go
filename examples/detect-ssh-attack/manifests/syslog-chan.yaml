@@ -5,13 +5,14 @@ metadata:
   namespace: default
 spec:
   servicePort: 8080
-  serviceRoute: syslog
-  select:
-    data: |
+  stream:
+    from:
+      - syslog
+    to:
+      - component: syslog-proc/syslog
+    select: |
       {"ts": syslog.timestamp, "message":syslog.message}
     where: |
       syslog.process.startsWith("sshd")
         && syslog.message.startsWith("authentication failure")
         && syslog.message.contains("user=root")
-  target:
-    component: syslog-proc/syslog

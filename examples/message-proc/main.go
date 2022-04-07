@@ -44,7 +44,7 @@ func messageHandler(ctx context.Context, in *common.InvocationEvent) (out *commo
 	if in == nil {
 		return nil, fmt.Errorf("invocation parameter required")
 	}
-	log.Printf("Data received: %s", string(in.Data))
+	log.Printf("Stream received: %s", string(in.Data))
 	return &common.Content{
 		Data:        in.Data,
 		ContentType: in.ContentType,

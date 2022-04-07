@@ -275,7 +275,7 @@ func aggregateEvents(store *eventStore) (*structpb.ListValue, error) {
 		}
 	}
 
-	if len(bucket) == 0{
+	if len(bucket) == 0 {
 		return nil, fmt.Errorf("join result is empty")
 	}
 

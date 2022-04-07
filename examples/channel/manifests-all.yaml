@@ -69,13 +69,16 @@ metadata:
   name: greetings-channel
   namespace: default
 spec:
-  select:
-    data: '{"newgreeting": greetings.greeting + " " + greetings.location + "!"}'
-    where: int(greetings['id']) % 5 == 0
   servicePort: 8080
-  serviceRoute: greetings
-  target:
-    stream: rabbit-stream/greetings-sink
+  stream:
+    from:
+    - greetings
+    select: |
+      {"newgreeting": greetings.greeting + " " + greetings.location + "!"}
+    to:
+    - stream: rabbit-stream/greetings-sink
+    where: |
+      int(greetings['id']) % 5 == 0
 ---
 apiVersion: streaming.vivien.io/v1alpha1
 kind: ClusterStream

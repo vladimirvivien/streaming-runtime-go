@@ -1,9 +1,11 @@
 package v1alpha1
 
-// DataSelection defines data selection expressions to select and filter out streamed events
-type DataSelection struct {
+// StreamSetup defines stream data selection, composition, filter and output
+type StreamSetup struct {
+	From []string       `json:"from"`
+	To   []OutputTarget `json:"to"`
 	// +optional
-	Data string `json:"data"`
+	Select string `json:"select"`
 	// +optional
 	Where string `json:"where"`
 }

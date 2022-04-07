@@ -18,15 +18,16 @@ import (
 )
 
 var (
-	servicePort        = os.Getenv("CHANNEL_SERVICE_PORT")             // service port
-	serviceRoute       = os.Getenv("CHANNEL_SERVICE_ROUTE")            // service path
-	modeEnv            = os.Getenv("CHANNEL_MODE")                     // channel mode, valid values = {stream | aggregate}
-	triggerExprEnv     = os.Getenv("CHANNEL_AGGREGATE_TRIGGER")        // expression to trigger aggregation
-	filterExprEnv      = os.Getenv("CHANNEL_SELECT_FILTER_EXPRESSION") // expression used to filter data from stream
-	dataExprEnv        = os.Getenv("CHANNEL_SELECT_DATA_EXPRESSION")   // expression used to generate data output from streams
-	targetStreamEnv    = os.Getenv("CHANNEL_TARGET_STREAM")            // "pubsub/topic" path where to route result
-	targetComponentEnv = os.Getenv("CHANNEL_TARGET_COMPONENT")         // "component/route" path where to send result
-	counter            = 0
+	servicePort          = os.Getenv("CHANNEL_SERVICE_PORT")        // service port
+	modeEnv              = os.Getenv("CHANNEL_MODE")                // channel mode, valid values = {stream | aggregate}
+	streamFromEnv        = os.Getenv("CHANNEL_STREAM_FROM")         // name of topic or service route to stream from
+	streamToStreamEnv    = os.Getenv("CHANNEL_STREAM_TO_STREAM")    // "pubsub/topic" path where to route result
+	streamToComponentEnv = os.Getenv("CHANNEL_STREAM_TO_COMPONENT") // "component/route" path where to send result
+	streamFilterExprEnv  = os.Getenv("CHANNEL_STREAM_WHERE")        // expression used to filter data from stream
+	streamSelectExprEnv  = os.Getenv("CHANNEL_STREAM_SELECT")       // expression used to generate data output from streams
+
+	triggerExprEnv = os.Getenv("CHANNEL_AGGREGATE_TRIGGER") // expression to trigger aggregation
+	counter        = 0
 
 	inputChan  chan *common.InvocationEvent
 	outputChan chan []byte
@@ -40,18 +41,18 @@ func main() {
 	if servicePort == "" {
 		servicePort = ":8080"
 	}
-	if serviceRoute == "" {
-		serviceRoute = support.SanitizeIdentifier(os.Getenv("APP_ID"))
+	if streamFromEnv == "" {
+		streamFromEnv = support.SanitizeIdentifier(os.Getenv("APP_ID"))
 	}
 	if modeEnv == "" {
 		modeEnv = "stream"
 	}
-	if targetStreamEnv == "" && targetComponentEnv == "" {
+	if streamToStreamEnv == "" && streamToComponentEnv == "" {
 		log.Fatalf("channel: env CHANNEL_TARGET_STREAM and/or CHANNEL_TARGET_COMPONENT must be provided")
 	}
 
-	log.Printf("channel: service-port: %s [route=%s], filterExpr: (%s), dataExpr: (%s), mode: %s ==> target: stream(%s) component(%s)",
-		servicePort, serviceRoute, filterExprEnv, dataExprEnv, modeEnv, targetStreamEnv, targetComponentEnv)
+	log.Printf("channel: service-port: %s [stream-source=%s], filterExpr: (%s), dataExpr: (%s), mode: %s ==> target: stream(%s) component(%s)",
+		servicePort, streamFromEnv, streamFilterExprEnv, streamSelectExprEnv, modeEnv, streamToStreamEnv, streamToComponentEnv)
 
 	// setup internal channels for data processing
 	inputChan = make(chan *common.InvocationEvent, 1024)
@@ -66,32 +67,32 @@ func main() {
 	}
 	defer client.Close()
 
-	targetStreamParts, err := support.GetTargetParts(targetStreamEnv)
+	targetStreamParts, err := support.GetTargetParts(streamToStreamEnv)
 	if err != nil {
 		log.Fatalf("channel: stream target: %s", err)
 	}
-	targetComponentParts, err := support.GetTargetParts(targetComponentEnv)
+	targetComponentParts, err := support.GetTargetParts(streamToComponentEnv)
 	if err != nil {
 		log.Fatalf("channel: component target: %s", err)
 	}
 
 	// start service
 	svc := daprd.NewService(servicePort)
-	if err := svc.AddServiceInvocationHandler(serviceRoute, invocationHandler); err != nil {
-		log.Fatalf("channel: service route: %s: failed: %s", serviceRoute, err)
+	if err := svc.AddServiceInvocationHandler(streamFromEnv, invocationHandler); err != nil {
+		log.Fatalf("channel: service route: %s: failed: %s", streamFromEnv, err)
 	}
 
 	// setup common expression lang (cel) programs
 	// for data selection and data filtering
-	if filterExprEnv != "" {
-		prog, err := support.CompileCELProg(filterExprEnv, decls.NewVar(serviceRoute, decls.NewMapType(decls.String, decls.Dyn)))
+	if streamFilterExprEnv != "" {
+		prog, err := support.CompileCELProg(streamFilterExprEnv, decls.NewVar(streamFromEnv, decls.NewMapType(decls.String, decls.Dyn)))
 		if err != nil {
 			log.Fatalf("channel: filter expression: %s", err)
 		}
 		filterProg = prog
 	}
-	if dataExprEnv != "" {
-		prog, err := support.CompileCELProg(dataExprEnv, decls.NewVar(serviceRoute, decls.NewMapType(decls.String, decls.Dyn)))
+	if streamSelectExprEnv != "" {
+		prog, err := support.CompileCELProg(streamSelectExprEnv, decls.NewVar(streamFromEnv, decls.NewMapType(decls.String, decls.Dyn)))
 		if err != nil {
 			log.Fatalf("channel: data selection expression: %s", err)
 		}
@@ -99,7 +100,7 @@ func main() {
 	}
 	if triggerExprEnv != "" {
 		prog, err := support.CompileCELProg(triggerExprEnv,
-			decls.NewVar(serviceRoute, decls.NewMapType(decls.String, decls.Dyn)),
+			decls.NewVar(streamFromEnv, decls.NewMapType(decls.String, decls.Dyn)),
 			decls.NewVar("count", decls.Int),
 			decls.NewVar("duration", decls.String),
 		)
@@ -214,7 +215,7 @@ func shouldCollect(event *common.InvocationEvent, prog cel.Program) (bool, error
 			return false, fmt.Errorf("filter expression: marshal data: %s", err)
 		}
 		dataMap := map[string]interface{}{
-			serviceRoute: jsonData,
+			streamFromEnv: jsonData,
 		}
 
 		filterResult, _, err := prog.Eval(dataMap)
@@ -251,7 +252,7 @@ func collectData(event *common.InvocationEvent, prog cel.Program) ([]byte, error
 			return nil, fmt.Errorf("data collection: marshal data: %s", err)
 		}
 		dataMap := map[string]interface{}{
-			serviceRoute: data,
+			streamFromEnv: data,
 		}
 
 		result, _, err := prog.Eval(dataMap)

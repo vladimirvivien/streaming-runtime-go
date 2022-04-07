@@ -142,14 +142,8 @@ func (r *ChannelReconciler) createChanDeployment(ctx context.Context, channel *s
 		ContainerPort: channel.Spec.ServicePort,
 	})
 
-	// validate and set env data
-	if channel.Spec.Target.Stream == "" && channel.Spec.Target.Component == "" {
-		return nil, fmt.Errorf("channel must target a pubsub stream or a component")
-	}
-
-	serviceRoute := channel.Spec.ServiceRoute
-	if serviceRoute == "" {
-		serviceRoute = channel.Name
+	if channel.Spec.Stream.To[0].Stream == "" && channel.Spec.Stream.To[0].Component == "" {
+		return nil, fmt.Errorf("channel stream.To must have a stream or a component specified")
 	}
 
 	mode := channel.Spec.Mode
@@ -162,20 +156,13 @@ func (r *ChannelReconciler) createChanDeployment(ctx context.Context, channel *s
 
 	container.Env = []corev1.EnvVar{
 		{Name: "CHANNEL_SERVICE_PORT", Value: fmt.Sprintf(":%d", channel.Spec.ServicePort)},
-		{Name: "CHANNEL_SERVICE_ROUTE", Value: serviceRoute},
 		{Name: "CHANNEL_MODE", Value: mode},
 		{Name: "CHANNEL_AGGREGATE_TRIGGER", Value: channel.Spec.Trigger},
-		{Name: "CHANNEL_TARGET_STREAM", Value: validateTarget(channel.Spec.Target.Stream)},
-		{Name: "CHANNEL_TARGET_COMPONENT", Value: validateTarget(channel.Spec.Target.Component)},
-	}
-
-	// Setup data selection
-	if channel.Spec.Select != nil {
-		container.Env = append(
-			container.Env,
-			corev1.EnvVar{Name: "CHANNEL_SELECT_FILTER_EXPRESSION", Value: channel.Spec.Select.Where},
-			corev1.EnvVar{Name: "CHANNEL_SELECT_DATA_EXPRESSION", Value: channel.Spec.Select.Data},
-		)
+		{Name: "CHANNEL_STREAM_FROM", Value: channel.Spec.Stream.From[0]},
+		{Name: "CHANNEL_STREAM_TO_STREAM", Value: channel.Spec.Stream.To[0].Stream},
+		{Name: "CHANNEL_STREAM_TO_COMPONENT", Value: channel.Spec.Stream.To[0].Component},
+		{Name: "CHANNEL_STREAM_WHERE", Value: channel.Spec.Stream.Where},
+		{Name: "CHANNEL_STREAM_SELECT", Value: channel.Spec.Stream.Select},
 	}
 
 	deployment := &appsv1.Deployment{

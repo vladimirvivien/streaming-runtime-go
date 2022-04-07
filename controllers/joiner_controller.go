@@ -170,7 +170,7 @@ func (r *JoinerReconciler) createJoinerDeployment(ctx context.Context, joiner *s
 		container.Env = append(
 			container.Env,
 			corev1.EnvVar{Name: "JOINER_SELECT_FILTER_EXPRESSION", Value: joiner.Spec.Select.Where},
-			corev1.EnvVar{Name: "JOINER_SELECT_DATA_EXPRESSION", Value: joiner.Spec.Select.Data},
+			corev1.EnvVar{Name: "JOINER_SELECT_DATA_EXPRESSION", Value: joiner.Spec.Select.Select},
 		)
 	}
 

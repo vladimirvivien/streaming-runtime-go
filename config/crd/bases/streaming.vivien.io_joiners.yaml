@@ -1169,13 +1169,29 @@ spec:
                 - name
                 type: object
               select:
-                description: DataSelection defines data selection expressions to select
-                  and filter out streamed events
+                description: StreamSetup defines stream data selection, composition,
+                  filter and output
                 properties:
-                  data:
+                  from:
+                    items:
+                      type: string
+                    type: array
+                  select:
                     type: string
+                  to:
+                    items:
+                      properties:
+                        component:
+                          type: string
+                        stream:
+                          type: string
+                      type: object
+                    type: array
                   where:
                     type: string
+                required:
+                - from
+                - to
                 type: object
               servicePort:
                 format: int32

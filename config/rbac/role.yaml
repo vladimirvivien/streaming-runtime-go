@@ -172,3 +172,29 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - tables
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - tables/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - streaming.vivien.io
+  resources:
+  - tables/status
+  verbs:
+  - get
+  - patch
+  - update

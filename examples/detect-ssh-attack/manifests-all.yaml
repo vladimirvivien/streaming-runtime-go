@@ -97,17 +97,18 @@ metadata:
   name: syslog-channel
   namespace: default
 spec:
-  select:
-    data: |
+  servicePort: 8080
+  stream:
+    from:
+    - syslog
+    select: |
       {"ts": syslog.timestamp, "message":syslog.message}
+    to:
+    - component: syslog-proc/syslog
     where: |
       syslog.process.startsWith("sshd")
         && syslog.message.startsWith("authentication failure")
         && syslog.message.contains("user=root")
-  servicePort: 8080
-  serviceRoute: syslog
-  target:
-    component: syslog-proc/syslog
 ---
 apiVersion: streaming.vivien.io/v1alpha1
 kind: ClusterStream
