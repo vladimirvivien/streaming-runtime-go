@@ -28,14 +28,15 @@ type eventStore struct {
 }
 
 var (
-	servicePort   = os.Getenv("JOINER_SERVICE_PORT")             // service port
-	stream0Env    = os.Getenv("JOINER_STREAM0_INFO")             // a |-separated list of info for stream 0
-	stream1Env    = os.Getenv("JOINER_STREAM1_INFO")             // a |-separated list of info for stream 1
-	topics        []string                                       // names of known topics
-	targetEnv     = os.Getenv("JOINER_TARGET")                   // component[/path] to route result
-	windowSizeEnv = os.Getenv("JOINER_WINDOW_SIZE")              // window size formatted as Go duration   (i.e. 1m, 3ms, etc)
-	filterExprEnv = os.Getenv("JOINER_SELECT_FILTER_EXPRESSION") // expression used to filter data from stream
-	dataExprEnv   = os.Getenv("JOINER_SELECT_DATA_EXPRESSION")   // expression used to generate data output from streams
+	servicePort          = os.Getenv("JOINER_SERVICE_PORT")        // service port
+	streamFrom0Env       = os.Getenv("JOINER_STREAM_FROM_0")       // a |-separated list of info for stream 0
+	streamFrom1Env       = os.Getenv("JOINER_STREAM_FROM_1")       // a |-separated list of info for stream 1
+	streamToComponentEnv = os.Getenv("JOINER_STREAM_TO_COMPONENT") // component[/path] to route result
+	streamToStreamEnv    = os.Getenv("JOINER_STREAM_TO_STREAM")    // pubsub[/topic] where to route result
+	streamFilterExprEnv  = os.Getenv("JOINER_STREAM_FILTER")       // expression used to filter data from stream
+	streamSelectExprEnv  = os.Getenv("JOINER_STREAM_SELECT")       // expression used to generate data output from streams
+	windowSizeEnv        = os.Getenv("JOINER_WINDOW_SIZE")         // window size formatted as Go duration   (i.e. 1m, 3ms, etc)
+	topics               []string                                  // names of known topics
 
 	inputChan  chan *common.TopicEvent
 	outputChan chan []byte
@@ -63,17 +64,17 @@ func main() {
 	if servicePort == "" {
 		servicePort = ":8080"
 	}
-	if stream0Env == "" || stream1Env == "" {
-		log.Fatalf("joiner: env JOINER_STREAM0_INFO or JOINER_STREAM1_INFO missing")
+	if streamFrom0Env == "" || streamFrom1Env == "" {
+		log.Fatalf("joiner: env JOINER_STREAM_FROM_0 or JOINER_STREAM_FROM_1 missing")
 	}
-	if targetEnv == "" {
-		log.Fatalf("joiner: env JOINER_TARGET not provided")
+	if streamToComponentEnv == "" {
+		log.Fatalf("joiner: env JOINER_STREAM_TO_COMPONENT not provided")
 	}
 	if windowSizeEnv == "" {
 		windowSizeEnv = "10ms"
 	}
 	log.Printf("joiner: service-port: %s, streams: (%s;%s) filter: (%s) ==> target: %s (every %s)",
-		servicePort, stream0Env, stream1Env, filterExprEnv, targetEnv, windowSizeEnv)
+		servicePort, streamFrom0Env, streamFrom1Env, streamFilterExprEnv, streamToComponentEnv, windowSizeEnv)
 	// setup internal channels for data processing
 	inputChan = make(chan *common.TopicEvent)
 	outputChan = make(chan []byte, 1024)
@@ -86,9 +87,14 @@ func main() {
 		log.Fatalf("joiner: client failed: %s", err)
 	}
 	defer client.Close()
-	targetParts, err := support.GetTargetParts(targetEnv)
+
+	targetComponentParts, err := support.GetTargetParts(streamToComponentEnv)
 	if err != nil {
-		log.Fatalf("joiner: target: %s", err)
+		log.Fatalf("joiner: stream.To component: %s", err)
+	}
+	targetStreamParts, err := support.GetTargetParts(streamToStreamEnv)
+	if err != nil {
+		log.Fatalf("joiner: stream.To stream: %s", err)
 	}
 
 	// setup time window
@@ -101,7 +107,7 @@ func main() {
 
 	// setup service handlers
 	svc := daprd.NewService(servicePort)
-	streamsInfo := []string{stream0Env, stream1Env}
+	streamsInfo := []string{streamFrom0Env, streamFrom1Env}
 
 	// setup topic handler for each subscription
 	for _, stream := range streamsInfo {
@@ -125,16 +131,16 @@ func main() {
 
 	// setup common expression lang (cel) programs
 	// for data selection and data filtering
-	if filterExprEnv != "" {
+	if streamFilterExprEnv != "" {
 
-		prog, err := support.CompileCELProg(filterExprEnv, variables...)
+		prog, err := support.CompileCELProg(streamFilterExprEnv, variables...)
 		if err != nil {
 			log.Fatalf("joiner: filter expression: %s", err)
 		}
 		filterProg = prog
 	}
-	if dataExprEnv != "" {
-		prog, err := support.CompileCELProg(dataExprEnv, variables...)
+	if streamSelectExprEnv != "" {
+		prog, err := support.CompileCELProg(streamSelectExprEnv, variables...)
 		if err != nil {
 			log.Fatalf("joiner: data selection expression: %s", err)
 		}
@@ -145,7 +151,7 @@ func main() {
 	if err := startInputLoop(ctx, window, inputChan, outputChan); err != nil {
 		log.Fatalf("joiner: input loop: %s", err)
 	}
-	if err := startOutputLoop(ctx, client, outputChan, targetParts); err != nil {
+	if err := startOutputLoop(ctx, client, outputChan, targetComponentParts, targetStreamParts); err != nil {
 		log.Fatalf("joiner: target invoker: %s", err)
 	}
 
@@ -206,7 +212,7 @@ func startInputLoop(ctx context.Context, window *time.Ticker, input chan *common
 //  - Reads aggregated data (from dataChan)
 //  - Encodes as json
 //  - Send
-func startOutputLoop(ctx context.Context, client dapr.Client, outChan chan []byte, targetParts []string) error {
+func startOutputLoop(ctx context.Context, client dapr.Client, outChan chan []byte, targetComponentParts, targetStreamParts []string) error {
 	log.Print("joiner: starting output loop")
 	go func() {
 		for {
@@ -217,17 +223,27 @@ func startOutputLoop(ctx context.Context, client dapr.Client, outChan chan []byt
 					continue
 				}
 
-				content := &dapr.DataContent{
-					Data:        data,
-					ContentType: "application/json",
+				if len(targetStreamParts) > 0 {
+					pubsub, topic := targetStreamParts[0], targetStreamParts[1]
+					if err := client.PublishEvent(ctx, pubsub, topic, data, dapr.PublishEventWithContentType("application/json")); err != nil {
+						log.Printf("joiner: target pubsub/stream: %s", err)
+					} else {
+						log.Printf("joiner: data sent pubsub/stream %s: %s", targetStreamParts, string(data))
+					}
 				}
-				appId, route := targetParts[0], targetParts[1]
-				_, err := client.InvokeMethodWithContent(ctx, appId, route, http.MethodPost, content)
-				if err != nil {
-					log.Printf("joiner: invoke method: %s", err)
-					continue
+
+				if len(targetComponentParts) > 0 {
+					content := &dapr.DataContent{
+						Data:        data,
+						ContentType: "application/json",
+					}
+					componentId, route := targetComponentParts[0], targetComponentParts[1]
+					if _, err := client.InvokeMethodWithContent(ctx, componentId, route, http.MethodPost, content); err != nil {
+						log.Printf("joiner: target component service: %s", err)
+					} else {
+						log.Printf("joiner: data sent to %s: %s", targetComponentParts, string(content.Data))
+					}
 				}
-				log.Printf("joiner: sent output data: %s", string(data))
 			case <-ctx.Done():
 				log.Println("joiner: output invoker done!")
 				break

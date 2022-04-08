@@ -144,12 +144,12 @@ func (r *JoinerReconciler) createJoinerDeployment(ctx context.Context, joiner *s
 	})
 
 	// validate and set env data
-	if len(joiner.Spec.Streams) != 2 {
-		return nil, fmt.Errorf("joiner must have 2 input streams")
+	if len(joiner.Spec.Stream.From) != 2 {
+		return nil, fmt.Errorf("joiner stream.From must have 2 input streams")
 	}
 
-	if joiner.Spec.Target == "" {
-		return nil, fmt.Errorf("joiner missing valid target")
+	if joiner.Spec.Stream.To[0].Stream == "" && joiner.Spec.Stream.To[0].Component == "" {
+		return nil, fmt.Errorf("joiner stream.To must have a stream or a component specified")
 	}
 
 	streamInfo, err := r.collateStreamInfo(ctx, joiner)
@@ -159,19 +159,13 @@ func (r *JoinerReconciler) createJoinerDeployment(ctx context.Context, joiner *s
 
 	container.Env = []corev1.EnvVar{
 		{Name: "JOINER_SERVICE_PORT", Value: fmt.Sprintf(":%d", joiner.Spec.ServicePort)},
-		{Name: "JOINER_STREAM0_INFO", Value: streamInfo[0]},
-		{Name: "JOINER_STREAM1_INFO", Value: streamInfo[1]},
-		{Name: "JOINER_TARGET", Value: validateTarget(joiner.Spec.Target)},
+		{Name: "JOINER_STREAM_FROM_0", Value: streamInfo[0]},
+		{Name: "JOINER_STREAM_FROM_1", Value: streamInfo[1]},
+		{Name: "JOINER_STREAM_TO_STREAM", Value: validateTarget(joiner.Spec.Stream.To[0].Stream)},
+		{Name: "JOINER_STREAM_TO_COMPONENT", Value: validateTarget(joiner.Spec.Stream.To[0].Component)},
+		{Name: "JOINER_STREAM_WHERE", Value: joiner.Spec.Stream.Where},
+		{Name: "JOINER_STREAM_SELECT", Value: joiner.Spec.Stream.Select},
 		{Name: "JOINER_WINDOW_SIZE", Value: joiner.Spec.Window},
-	}
-
-	// Setup data selection
-	if joiner.Spec.Select != nil {
-		container.Env = append(
-			container.Env,
-			corev1.EnvVar{Name: "JOINER_SELECT_FILTER_EXPRESSION", Value: joiner.Spec.Select.Where},
-			corev1.EnvVar{Name: "JOINER_SELECT_DATA_EXPRESSION", Value: joiner.Spec.Select.Select},
-		)
 	}
 
 	deployment := &appsv1.Deployment{
@@ -227,7 +221,7 @@ func (r *JoinerReconciler) updateJoinerDeployment(joiner *streamingruntime.Joine
 // where each element is ClusterStream|Topic|Route
 func (r *JoinerReconciler) collateStreamInfo(ctx context.Context, joiner *streamingruntime.Joiner) ([]string, error) {
 	var result []string
-	for _, streamName := range joiner.Spec.Streams {
+	for _, streamName := range joiner.Spec.Stream.From {
 		stream := new(streamingruntime.Stream)
 		err := r.Get(ctx, types.NamespacedName{Namespace: joiner.Namespace, Name: streamName}, stream)
 		if err != nil {

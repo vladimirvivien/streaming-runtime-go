@@ -48,7 +48,7 @@ func main() {
 		modeEnv = "stream"
 	}
 	if streamToStreamEnv == "" && streamToComponentEnv == "" {
-		log.Fatalf("channel: env CHANNEL_TARGET_STREAM and/or CHANNEL_TARGET_COMPONENT must be provided")
+		log.Fatalf("channel: env CHANNEL_STREAM_TO_STREAM and/or CHANNEL_STREAM_TO_COMPONENT must be provided")
 	}
 
 	log.Printf("channel: service-port: %s [stream-source=%s], filterExpr: (%s), dataExpr: (%s), mode: %s ==> target: stream(%s) component(%s)",

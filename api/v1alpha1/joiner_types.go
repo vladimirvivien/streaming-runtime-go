@@ -23,12 +23,9 @@ import (
 
 // JoinerSpec defines the desired state of Joiner
 type JoinerSpec struct {
-	ServicePort int32    `json:"servicePort"`
-	Streams     []string `json:"streams"`
-	Window      string   `json:"window"`
-	Target      string   `json:"target"`
-	// +optional
-	Select *StreamSetup `json:"select,omitempty"`
+	ServicePort int32        `json:"servicePort"`
+	Window      string       `json:"window"`
+	Stream      *StreamSetup `json:"stream"`
 	// +optional
 	Container *corev1.Container `json:"container"`
 }

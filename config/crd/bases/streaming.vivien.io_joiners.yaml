@@ -1168,7 +1168,10 @@ spec:
                 required:
                 - name
                 type: object
-              select:
+              servicePort:
+                format: int32
+                type: integer
+              stream:
                 description: StreamSetup defines stream data selection, composition,
                   filter and output
                 properties:
@@ -1193,21 +1196,11 @@ spec:
                 - from
                 - to
                 type: object
-              servicePort:
-                format: int32
-                type: integer
-              streams:
-                items:
-                  type: string
-                type: array
-              target:
-                type: string
               window:
                 type: string
             required:
             - servicePort
-            - streams
-            - target
+            - stream
             - window
             type: object
           status:

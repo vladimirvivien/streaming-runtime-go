@@ -4,12 +4,15 @@ metadata:
   name: hello-goodbye-join
   namespace: default
 spec:
-  streams:
-  - hello
-  - goodbye
-  window: 14s
-  select:
-    data: '{"hello": hello, "goodbye":goodbye}'
-    where: "int(hello['id']) == 5 && goodbye.id == 5.0"
   servicePort: 8080
-  target: message-proc/messages
+  window: 14s
+  stream:
+    from:
+      - hello
+      - goodbye
+    to:
+      - component: message-proc/messages
+    select: |
+      {"hello": hello, "goodbye":goodbye}
+    where: |
+      int(hello['id']) == 5 && goodbye.id == 5.0
