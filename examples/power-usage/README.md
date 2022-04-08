@@ -177,12 +177,15 @@ metadata:
   name: join-tenants-poweruse
   namespace: default
 spec:
-  streams:
-    - tenants
-    - poweruse
+  servicePort: 8080
   window: 20s
-  select:
-    data: |
+  stream:
+    from:
+      - tenants
+      - poweruse
+    to:
+      - component: billable-proc/billables
+    select: |
       {
         "customer_id": tenants.customer_id,
         "tenant_id": tenants.tenant_id,
@@ -191,9 +194,6 @@ spec:
     where: |
       tenants.tenant_id == poweruse.tenant_id
         && poweruse.power_use >= 1.0
-
-  servicePort: 8080
-  target: billable-proc/billables
 ```
 
 ### The message `Processor`

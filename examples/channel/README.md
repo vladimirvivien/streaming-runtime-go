@@ -222,12 +222,15 @@ metadata:
   namespace: default
 spec:
   servicePort: 8080
-  serviceRoute: greetings
-  select:
-    data: '{"new-greeting": greetings.greeting + " " + greetings.location + "!"}'
-    where: "int(greetings['id']) % 5 == 0"
-  target:
-    stream: rabbit-stream/greetings-sink
+  stream:
+    from:
+      - greetings
+    to:
+      - stream: rabbit-stream/greetings-sink
+    select: |
+      {"newgreeting": greetings.greeting + " " + greetings.location + "!"}
+    where: |
+      int(greetings['id']) % 5 == 0
 ```
 
 ### The message `Processor`
