@@ -9,7 +9,7 @@ This example shows how to get started with the `streaming-runtime-go` project by
 ## Components
 This example uses several [streaming-runtime components](../../components) as shown in the illustration below.
 
-<img alt="Components" height="586" src="hello-streaming.png" title="Components" width="892"/>
+![Components](hello-streaming.png "Components")
 
 ## Pre-requisites
 
