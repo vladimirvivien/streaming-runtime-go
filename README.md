@@ -16,12 +16,12 @@ components and how they work.
 
 ### Using the Channel component 
 
-The project comes with several components that allows users to
-compose distributed stream processing applications.
-This example demonstrates the use of the `Channel` component to
-stream data from a streaming source (Redis Streams) to another
-stream topic (on RabbitMQ). The channel uses Common Expression language
-to specify data filtration and composition as illustrated below.
+The project comes with [several components](docs) that allows users to
+quickly compose distributed stream processing applications.
+The [Channel example](./examples/channel) demonstrates the use of the `Channel` component to
+stream data from a stream source (Redis Streams) to another
+stream topic (on RabbitMQ). The channel uses common expression language
+to specify data filtration and data composition as the events are streamed.
 
 ![Components](./examples/channel/channel-example.png "Components")
 
@@ -47,3 +47,5 @@ spec:
     where: |
       int(greetings['id']) % 5 == 0
 ```
+
+Check out the [entire example](./examples/channel) for detail.
