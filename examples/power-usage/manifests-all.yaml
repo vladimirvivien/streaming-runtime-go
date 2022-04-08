@@ -140,21 +140,22 @@ metadata:
   name: join-tenants-poweruse
   namespace: default
 spec:
-  select:
-    data: |
+  servicePort: 8080
+  stream:
+    from:
+    - tenants
+    - poweruse
+    select: |
       {
         "customer_id": tenants.customer_id,
         "tenant_id": tenants.tenant_id,
         "tenant_kwh_usage": poweruse.kwh_use
       }
-    where: |
+    to:
+    - component: billable-proc/billables
+    where: |-
       tenants.tenant_id == poweruse.tenant_id
         && poweruse.power_use >= 1.0
-  servicePort: 8080
-  streams:
-  - tenants
-  - poweruse
-  target: billable-proc/billables
   window: 20s
 ---
 apiVersion: streaming.vivien.io/v1alpha1
